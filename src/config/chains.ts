@@ -1,3 +1,4 @@
+import { ChainId } from '@dcl/schemas'
 import type { Chain } from 'viem'
 import { mainnet, polygon, polygonAmoy, sepolia } from 'viem/chains'
 
@@ -22,30 +23,6 @@ const testChains = [sepolia, polygonAmoy] as const
 const supportedChains = [...productionChains, ...testChains] as const
 
 /**
- * Enum-like object containing all supported chain IDs.
- * Use this to reference chain IDs in a type-safe manner.
- *
- * @example
- * ```ts
- * import { CHAIN_ID } from '@dcl/core-web3'
- *
- * const chainId = CHAIN_ID.ethereumMainnet // 1
- * const polygonId = CHAIN_ID.polygonMainnet // 137
- * ```
- * @readonly
- */
-const CHAIN_ID = {
-  /** Ethereum Mainnet chain ID (1) */
-  ethereumMainnet: mainnet.id,
-  /** Polygon Mainnet chain ID (137) */
-  polygonMainnet: polygon.id,
-  /** Ethereum Sepolia testnet chain ID (11155111) */
-  ethereumSepolia: sepolia.id,
-  /** Polygon Amoy testnet chain ID (80002) */
-  polygonAmoy: polygonAmoy.id
-} as const
-
-/**
  * Union type of all supported chain IDs.
  * Useful for type-safe chain ID validation.
  */
@@ -59,15 +36,15 @@ type SupportedChainId = (typeof supportedChains)[number]['id']
  *
  * @example
  * ```ts
- * import { isSupportedChain, CHAIN_ID } from '@dcl/core-web3'
+ * import { isSupportedChain, ChainId } from '@dcl/core-web3'
  *
  * if (isSupportedChain(chainId)) {
  *   // chainId is narrowed to SupportedChainId
  *   console.log('Chain is supported!')
  * }
  *
- * isSupportedChain(1) // true (Ethereum Mainnet)
- * isSupportedChain(137) // true (Polygon)
+ * isSupportedChain(ChainId.ETHEREUM_MAINNET) // true
+ * isSupportedChain(ChainId.MATIC_MAINNET) // true
  * isSupportedChain(999) // false (unsupported)
  * ```
  */
@@ -83,12 +60,12 @@ function isSupportedChain(chainId: number): chainId is SupportedChainId {
  *
  * @example
  * ```ts
- * import { getChainById, CHAIN_ID } from '@dcl/core-web3'
+ * import { getChainById, ChainId } from '@dcl/core-web3'
  *
- * const ethereum = getChainById(CHAIN_ID.ethereumMainnet)
+ * const ethereum = getChainById(ChainId.ETHEREUM_MAINNET)
  * // { id: 1, name: 'Ethereum', ... }
  *
- * const polygon = getChainById(137)
+ * const polygon = getChainById(ChainId.MATIC_MAINNET)
  * // { id: 137, name: 'Polygon', ... }
  *
  * const unknown = getChainById(999)
@@ -99,5 +76,5 @@ function getChainById(chainId: number): Chain | undefined {
   return supportedChains.find(chain => chain.id === chainId)
 }
 
-export { CHAIN_ID, getChainById, isSupportedChain, productionChains, supportedChains, testChains }
+export { ChainId, getChainById, isSupportedChain, productionChains, supportedChains, testChains }
 export type { SupportedChainId }
