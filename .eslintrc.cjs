@@ -1,4 +1,4 @@
 module.exports = {
-  extends: ["@dcl/eslint-config/ui"],
+  extends: ['@dcl/eslint-config/dapps'],
 }
 
