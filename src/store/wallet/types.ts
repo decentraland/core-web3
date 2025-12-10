@@ -7,4 +7,3 @@ export interface WalletState {
   isDisconnecting: boolean
   error: string | null
 }
-

@@ -6,4 +6,3 @@ export interface NetworkState {
   isNetworkSwitching: boolean
   error: string | null
 }
-

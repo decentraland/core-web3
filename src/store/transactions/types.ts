@@ -1,16 +1,17 @@
 // Transaction state types
 
-export type TransactionStatus = 'pending' | 'success' | 'error'
+type TransactionStatus = 'pending' | 'success' | 'error'
 
-export interface Transaction {
+interface Transaction {
   hash: string
   status: TransactionStatus
   error?: string
   timestamp: number
 }
 
-export interface TransactionsState {
+interface TransactionsState {
   transactions: Record<string, Transaction>
   pending: string[]
 }
 
+export type { Transaction, TransactionsState, TransactionStatus }

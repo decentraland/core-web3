@@ -5,5 +5,8 @@
  * Built with wagmi and Redux Toolkit.
  */
 
+// Config
+export * from './config'
+
 // Store (types)
 export * from './store'
