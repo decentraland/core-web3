@@ -13,6 +13,7 @@ type MagicInstance = {
   }
 }
 
+// DCL Magic configuration - matches decentraland-connect
 const MAGIC_CONFIG = {
   apiKey: 'pk_live_212568025B158355',
   testApiKey: 'pk_live_CE856A4938B36648',
@@ -30,6 +31,22 @@ interface MagicParameters {
   isTest?: boolean
 }
 
+/**
+ * Magic connector for wagmi.
+ *
+ * This connector integrates Magic Link authentication with wagmi,
+ * allowing users to sign in with social logins (Google, Discord, etc.)
+ * or email-based authentication.
+ *
+ * Important: The user must already be logged in via Magic (typically through
+ * the auth dapp redirect flow). This connector only maintains the session,
+ * it does not initiate the Magic login flow.
+ *
+ * Flow:
+ * 1. User goes to auth.decentraland.org and logs in with Magic (social login)
+ * 2. Auth dapp redirects back to social dapp with Magic session
+ * 3. This connector detects the Magic session and connects
+ */
 function magic(parameters: MagicParameters = {}) {
   const { isTest = false } = parameters
 
@@ -56,6 +73,10 @@ function magic(parameters: MagicParameters = {}) {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return createConnector<EIP1193Provider, any, StorageItem>(config => {
+    /**
+     * Helper to get accounts from the provider.
+     * Used by setup(), connect(), and getAccounts().
+     */
     async function fetchAccounts(): Promise<readonly `0x${string}`[]> {
       if (!provider) {
         return []
@@ -68,6 +89,10 @@ function magic(parameters: MagicParameters = {}) {
       return accounts as readonly `0x${string}`[]
     }
 
+    /**
+     * Helper to initialize the provider and get connection data.
+     * Abstracts the common pattern of getting provider + accounts + saving chainId.
+     */
     async function initializeConnection(chainId: number): Promise<{ accounts: readonly `0x${string}`[]; chainId: number } | null> {
       provider = await magicInstance!.wallet.getProvider()
       const accounts = await fetchAccounts()
@@ -87,6 +112,10 @@ function magic(parameters: MagicParameters = {}) {
       type: 'magic',
 
       async setup() {
+        // Check if user is already logged in via Magic
+        // Magic stores sessions in its own domain (auth.magic.link) via iframe,
+        // so we can detect sessions even when the user logged in from a different
+        // subdomain (e.g., auth.decentraland.org)
         const savedChainId = await config.storage?.getItem('magicChainId')
         const chainId = savedChainId ?? config.chains[0]?.id
 
@@ -144,6 +173,8 @@ function magic(parameters: MagicParameters = {}) {
       },
 
       async getChainId() {
+        // Magic is agnostic of the current chain - it doesn't track chain state
+        // internally like MetaMask does. We need to return the chainId we stored.
         const savedChainId = await config.storage?.getItem('magicChainId')
         return savedChainId ?? config.chains[0].id
       },
@@ -156,8 +187,14 @@ function magic(parameters: MagicParameters = {}) {
       },
 
       async isAuthorized() {
+        // This is called by wagmi during reconnect() to check if the connector
+        // has an active session. For Magic, we check if the user is logged in.
         try {
           if (!magicInstance) {
+            // Try saved chain first, otherwise use default chain
+            // This is important for cross-domain sessions: Magic stores sessions
+            // in its own domain (auth.magic.link) via iframe, so we can check
+            // if user is logged in even without a saved chainId
             const savedChainId = await config.storage?.getItem('magicChainId')
             const chainId = savedChainId ?? config.chains[0]?.id
 
@@ -181,6 +218,9 @@ function magic(parameters: MagicParameters = {}) {
           throw new Error(`Chain ${newChainId} not configured`)
         }
 
+        // Magic doesn't support wallet_switchEthereumChain natively
+        // We need to recreate the Magic instance with the new chain
+        // This is the same approach decentraland-connect uses
         magicInstance = await getMagicInstance(newChainId)
         const isLoggedIn = await magicInstance.user.isLoggedIn()
 
@@ -196,6 +236,10 @@ function magic(parameters: MagicParameters = {}) {
         return chain
       },
 
+      // These handlers are required by wagmi's connector interface.
+      // They would be called if Magic emitted wallet events, but Magic
+      // doesn't emit events like MetaMask does. They're here for interface
+      // compliance and potential future Magic SDK updates.
       onAccountsChanged(accounts: string[]) {
         if (accounts.length === 0) {
           this.onDisconnect()
