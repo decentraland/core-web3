@@ -1,6 +1,6 @@
-import { ChainId } from '@dcl/schemas'
 import type { Chain } from 'viem'
 import { mainnet, polygon, polygonAmoy, sepolia } from 'viem/chains'
+import { ChainId } from '@dcl/schemas'
 
 /**
  * Production blockchain networks supported by Decentraland.

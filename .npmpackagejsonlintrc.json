@@ -1,0 +1,32 @@
+{
+  "rules": {
+    "prefer-caret-version-dependencies": "error",
+    "prefer-caret-version-devDependencies": "error",
+    "no-duplicate-properties": "error",
+    "prefer-property-order": [
+      "error",
+      [
+        "name",
+        "version",
+        "description",
+        "main",
+        "module",
+        "types",
+        "exports",
+        "files",
+        "scripts",
+        "dependencies",
+        "peerDependencies",
+        "devDependencies",
+        "repository",
+        "keywords",
+        "author",
+        "license",
+        "bugs",
+        "homepage",
+        "engines",
+        "publishConfig"
+      ]
+    ]
+  }
+}
