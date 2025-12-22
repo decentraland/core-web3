@@ -64,7 +64,7 @@ const defaultAppMetadata = {
   name: 'Decentraland',
   description: 'Decentraland dApp',
   url: 'https://decentraland.org',
-  icons: ['https://decentraland.org/favicon.ico']
+  icons: ['https://cdn.decentraland.org/@dcl/marketplace-site/6.41.1/favicon.ico']
 }
 
 /**
