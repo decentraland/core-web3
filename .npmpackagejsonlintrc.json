@@ -1,7 +1,32 @@
 {
   "rules": {
-    "prefer-caret-version-dependencies": "error",
-    "prefer-caret-version-devDependencies": "error",
+    "prefer-absolute-version-dependencies": [
+      "warning",
+      {
+        "exceptions": [
+          "@dcl/schemas",
+          "@dcl/ui-env",
+          "@dcl/crypto",
+          "@dcl/ecs",
+          "decentraland-ui",
+          "decentraland-ui2",
+          "decentraland-dapps",
+          "decentraland-connect"
+        ]
+      }
+    ],
+    "prefer-absolute-version-devDependencies": [
+      "warning",
+      {
+        "exceptions": [
+          "@dcl/eslint-config",
+          "@dcl/schemas",
+          "@dcl/sdk"
+        ]
+      }
+    ],
+    "no-file-dependencies": "error",
+    "no-git-dependencies": "error",
     "no-duplicate-properties": "error",
     "prefer-property-order": [
       "error",
@@ -12,6 +37,7 @@
         "main",
         "module",
         "types",
+        "type",
         "exports",
         "files",
         "scripts",
@@ -25,6 +51,7 @@
         "bugs",
         "homepage",
         "engines",
+        "overrides",
         "publishConfig"
       ]
     ]
