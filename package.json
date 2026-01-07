@@ -33,7 +33,7 @@
     "magic-sdk": "32.0.0"
   },
   "peerDependencies": {
-    "@dcl/schemas": "^20.3.1",
+    "@dcl/schemas": "^22.0.0",
     "@tanstack/react-query": "^5.62.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
@@ -42,7 +42,7 @@
   },
   "devDependencies": {
     "@dcl/eslint-config": "^2.4.3",
-    "@dcl/schemas": "^20.3.1",
+    "@dcl/schemas": "^22.0.0",
     "@magic-ext/oauth2": "14.0.0",
     "@tanstack/react-query": "5.62.0",
     "@types/react": "18.3.0",
