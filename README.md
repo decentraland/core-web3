@@ -45,11 +45,6 @@ This library expects the following peer dependencies to be installed in your dAp
 - `@tanstack/react-query` (^5.0.0)
 - `@dcl/schemas` (^20.0.0)
 
-### Optional (for Magic connector)
-
-- `magic-sdk` (^32.0.0)
-- `@magic-ext/oauth2` (^14.0.0)
-
 ## Usage
 
 ### Basic Configuration
@@ -71,8 +66,7 @@ const config = createWeb3CoreConfig({
 const configWithMagic = createWeb3CoreConfig({
   walletConnectProjectId: 'your-project-id',
   additionalConnectors: [
-    magic(), // Uses DCL defaults
-    // or magic({ isTest: true }) for testnet
+    magic({ apiKey: 'pk_live_YOUR_MAGIC_KEY' }),
   ],
 })
 ```
