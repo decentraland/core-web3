@@ -45,6 +45,14 @@ This library expects the following peer dependencies to be installed in your dAp
 - `@tanstack/react-query` (^5.0.0)
 - `@dcl/schemas` (^20.0.0)
 
+### Optional (for Magic connector)
+
+If you want to use the Magic connector for social login, install these additional packages:
+
+```bash
+npm install magic-sdk @magic-ext/oauth2
+```
+
 ## Usage
 
 ### Basic Configuration
