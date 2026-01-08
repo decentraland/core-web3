@@ -9,6 +9,8 @@ Provide a common foundation for Web3 connectivity across Decentraland dApps, inc
 ## What's Included
 
 - **wagmi Configuration**: Standard chain configs, transports, and metadata for Decentraland dApps
+- **Custom Connectors**:
+  - `magic` - Social login (Google, Discord, etc.) via auth.decentraland.org
 - **Shared Providers**: `Web3CoreProvider` and `Web3SyncProvider` for seamless integration
 - **Redux Toolkit Slices**:
   - `wallet` - Account state management (address, connection status, etc.)
@@ -41,8 +43,41 @@ This library expects the following peer dependencies to be installed in your dAp
 - `wagmi` (^2.0.0)
 - `viem` (^2.0.0)
 - `@tanstack/react-query` (^5.0.0)
+- `@dcl/schemas` (^20.0.0)
+
+### Optional (for Magic connector)
+
+If you want to use the Magic connector for social login, install these additional packages:
+
+```bash
+npm install magic-sdk @magic-ext/oauth2
+```
 
 ## Usage
+
+### Basic Configuration
+
+```typescript
+import { createWeb3CoreConfig, magic } from '@dcl/web3-core'
+
+// Basic config with default connectors
+const config = createWeb3CoreConfig({
+  walletConnectProjectId: 'your-project-id',
+  appMetadata: {
+    name: 'My Decentraland App',
+    description: 'An awesome dApp',
+    url: 'https://myapp.decentraland.org',
+  },
+})
+
+// With Magic connector for social login
+const configWithMagic = createWeb3CoreConfig({
+  walletConnectProjectId: 'your-project-id',
+  additionalConnectors: [
+    magic({ apiKey: 'pk_live_YOUR_MAGIC_KEY' }),
+  ],
+})
+```
 
 ### 1. Add reducers to your store
 

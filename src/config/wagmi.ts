@@ -1,5 +1,6 @@
 import type { Chain, Transport } from 'viem'
 import { createConfig, http } from 'wagmi'
+import type { CreateConnectorFn } from 'wagmi'
 import { coinbaseWallet, injected, walletConnect } from 'wagmi/connectors'
 import { supportedChains } from './chains'
 
@@ -54,6 +55,23 @@ interface Web3CoreConfigOptions {
     /** Enable Coinbase Wallet connector @default true */
     coinbaseWallet?: boolean
   }
+
+  /**
+   * Additional custom connectors to include.
+   * Use this to add connectors like Magic for social login.
+   *
+   * @example
+   * ```ts
+   * import { magic } from '@dcl/core-web3'
+   *
+   * const config = createWeb3CoreConfig({
+   *   additionalConnectors: [
+   *     magic({ apiKey: '...', rpcUrl: '...', chainId: 1 }),
+   *   ],
+   * })
+   * ```
+   */
+  additionalConnectors?: CreateConnectorFn[]
 }
 
 /**
@@ -112,7 +130,8 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
     appMetadata = defaultAppMetadata,
     chains = supportedChains,
     transports: customTransports,
-    connectors: connectorOptions = {}
+    connectors: connectorOptions = {},
+    additionalConnectors = []
   } = options
 
   const {
@@ -156,6 +175,8 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
       })
     )
   }
+
+  connectors.push(...additionalConnectors)
 
   return createConfig({
     chains,
