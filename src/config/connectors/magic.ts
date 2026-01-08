@@ -1,6 +1,6 @@
 import type { Chain, EIP1193Provider } from 'viem'
 import { createConnector } from 'wagmi'
-import { ChainId } from '@dcl/schemas/dist/dapps/chain-id'
+import { ChainId } from '@dcl/schemas'
 
 type MagicInstance = {
   user: {
@@ -13,22 +13,19 @@ type MagicInstance = {
   }
 }
 
-// DCL Magic configuration - matches decentraland-connect
-const MAGIC_CONFIG = {
-  apiKey: 'pk_live_212568025B158355',
-  testApiKey: 'pk_live_CE856A4938B36648',
-  rpcUrls: {
-    [ChainId.ETHEREUM_MAINNET]: 'https://rpc.decentraland.org/mainnet?project=magic',
-    [ChainId.ETHEREUM_SEPOLIA]: 'https://rpc.decentraland.org/sepolia?project=magic',
-    [ChainId.MATIC_MAINNET]: 'https://rpc.decentraland.org/polygon?project=magic',
-    [ChainId.MATIC_AMOY]: 'https://rpc.decentraland.org/amoy?project=magic'
-  } as Record<number, string>
-} as const
+// RPC URLs for Magic - matches decentraland-connect
+const MAGIC_RPC_URLS: Record<number, string> = {
+  [ChainId.ETHEREUM_MAINNET]: 'https://rpc.decentraland.org/mainnet?project=magic',
+  [ChainId.ETHEREUM_SEPOLIA]: 'https://rpc.decentraland.org/sepolia?project=magic',
+  [ChainId.MATIC_MAINNET]: 'https://rpc.decentraland.org/polygon?project=magic',
+  [ChainId.MATIC_AMOY]: 'https://rpc.decentraland.org/amoy?project=magic'
+}
 
 type StorageItem = { magicChainId?: number }
 
 interface MagicParameters {
-  isTest?: boolean
+  /** Magic publishable API key (pk_live_...) */
+  apiKey: string
 }
 
 /**
@@ -47,8 +44,8 @@ interface MagicParameters {
  * 2. Auth dapp redirects back to social dapp with Magic session
  * 3. This connector detects the Magic session and connects
  */
-function magic(parameters: MagicParameters = {}) {
-  const { isTest = false } = parameters
+function magic(parameters: MagicParameters) {
+  const { apiKey } = parameters
 
   let magicInstance: MagicInstance | null = null
   let provider: EIP1193Provider | null = null
@@ -59,8 +56,7 @@ function magic(parameters: MagicParameters = {}) {
     // eslint-disable-next-line @typescript-eslint/naming-convention
     const { OAuthExtension } = await import('@magic-ext/oauth2')
 
-    const apiKey = isTest ? MAGIC_CONFIG.testApiKey : MAGIC_CONFIG.apiKey
-    const rpcUrl = MAGIC_CONFIG.rpcUrls[chainId] || MAGIC_CONFIG.rpcUrls[ChainId.ETHEREUM_MAINNET]
+    const rpcUrl = MAGIC_RPC_URLS[chainId] || MAGIC_RPC_URLS[ChainId.ETHEREUM_MAINNET]
 
     return new Magic(apiKey, {
       extensions: [new OAuthExtension()],
