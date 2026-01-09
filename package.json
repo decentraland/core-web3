@@ -30,9 +30,11 @@
   },
   "peerDependencies": {
     "@dcl/schemas": "^22.0.0",
+    "@reduxjs/toolkit": "^2.5.0",
     "@tanstack/react-query": "^5.62.0",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
+    "react-redux": "^9.2.0",
     "viem": "^2.21.0",
     "wagmi": "^2.14.0"
   },
@@ -40,6 +42,7 @@
     "@dcl/eslint-config": "^2.4.3",
     "@dcl/schemas": "^22.0.0",
     "@magic-ext/oauth2": "14.0.0",
+    "@reduxjs/toolkit": "2.5.0",
     "@tanstack/react-query": "5.62.0",
     "@types/react": "18.3.0",
     "@types/react-dom": "18.3.0",
@@ -58,6 +61,7 @@
     "prettier": "3.4.0",
     "react": "18.3.0",
     "react-dom": "18.3.0",
+    "react-redux": "9.2.0",
     "typescript": "5.7.3",
     "viem": "2.21.0",
     "vitest": "2.1.0",
