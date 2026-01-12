@@ -8,5 +8,8 @@
 // Config
 export * from './config'
 
-// Store (types)
+// Providers
+export * from './providers'
+
+// Store
 export * from './store'
