@@ -8,14 +8,14 @@ type RootState = { wallet: WalletState }
 
 const getWalletState = (state: RootState): WalletState => state.wallet
 
-const getAddress = (state: RootState): string | null => state.wallet.address
+const getAddress = (state: RootState): string | null => getWalletState(state).address
 
-const getIsConnected = (state: RootState): boolean => state.wallet.isConnected
+const getIsConnected = (state: RootState): boolean => getWalletState(state).isConnected
 
-const getIsConnecting = (state: RootState): boolean => state.wallet.isConnecting
+const getIsConnecting = (state: RootState): boolean => getWalletState(state).isConnecting
 
-const getIsDisconnecting = (state: RootState): boolean => state.wallet.isDisconnecting
+const getIsDisconnecting = (state: RootState): boolean => getWalletState(state).isDisconnecting
 
-const getWalletError = (state: RootState): string | null => state.wallet.error
+const getWalletError = (state: RootState): string | null => getWalletState(state).error
 
 export { getAddress, getIsConnected, getIsConnecting, getIsDisconnecting, getWalletError, getWalletState }

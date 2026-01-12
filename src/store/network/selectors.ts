@@ -8,12 +8,12 @@ type RootState = { network: NetworkState }
 
 const getNetworkState = (state: RootState): NetworkState => state.network
 
-const getChainId = (state: RootState): number | null => state.network.chainId
+const getChainId = (state: RootState): number | null => getNetworkState(state).chainId
 
-const getIsSupportedNetwork = (state: RootState): boolean => state.network.isSupportedNetwork
+const getIsSupportedNetwork = (state: RootState): boolean => getNetworkState(state).isSupportedNetwork
 
-const getIsNetworkSwitching = (state: RootState): boolean => state.network.isNetworkSwitching
+const getIsNetworkSwitching = (state: RootState): boolean => getNetworkState(state).isNetworkSwitching
 
-const getNetworkError = (state: RootState): string | null => state.network.error
+const getNetworkError = (state: RootState): string | null => getNetworkState(state).error
 
 export { getChainId, getIsNetworkSwitching, getIsSupportedNetwork, getNetworkError, getNetworkState }

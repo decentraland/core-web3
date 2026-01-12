@@ -8,16 +8,20 @@ type RootState = { transactions: TransactionsState }
 
 const getTransactionsState = (state: RootState): TransactionsState => state.transactions
 
-const getAllTransactions = (state: RootState): Record<string, Transaction> => state.transactions.transactions
+const getAllTransactions = (state: RootState): Record<string, Transaction> => getTransactionsState(state).transactions
 
-const getTransaction = (state: RootState, hash: string): Transaction | undefined => state.transactions.transactions[hash]
+const getPendingTransactionHashes = (state: RootState): string[] => getTransactionsState(state).pending
 
-const getPendingTransactionHashes = (state: RootState): string[] => state.transactions.pending
+const getTransaction = (state: RootState, hash: string): Transaction | undefined => getAllTransactions(state)[hash]
 
-const getPendingTransactions = (state: RootState): Transaction[] =>
-  state.transactions.pending.map(hash => state.transactions.transactions[hash]).filter((tx): tx is Transaction => tx !== undefined)
+const getPendingTransactions = (state: RootState): Transaction[] => {
+  const transactions = getAllTransactions(state)
+  return getPendingTransactionHashes(state)
+    .map(hash => transactions[hash])
+    .filter((tx): tx is Transaction => tx !== undefined)
+}
 
-const hasPendingTransactions = (state: RootState): boolean => state.transactions.pending.length > 0
+const hasPendingTransactions = (state: RootState): boolean => getPendingTransactionHashes(state).length > 0
 
 export {
   getAllTransactions,
