@@ -1,5 +1,7 @@
 # @dcl/web3-core
 
+[![Coverage Status](https://coveralls.io/repos/github/decentraland/core-web3/badge.svg)](https://coveralls.io/github/decentraland/core-web3)
+
 A shared Web3 connectivity layer for Decentraland dApps, built with wagmi and Redux Toolkit.
 
 ## Objective
@@ -16,15 +18,22 @@ Provide a common foundation for Web3 connectivity across Decentraland dApps, inc
   - `wallet` - Account state management (address, connection status, etc.)
   - `network` - Chain/network state and switching
   - `transactions` - Transaction tracking and status management
-- **High-level Hooks**: `useWallet`, `useNetwork`, `useTokenBalance`, and more
-- **Identity Helpers**: Integration with Decentraland identity/autologin (if applicable)
+- **High-level Hooks**: `useWallet`, `useNetwork`, `useTokenBalance`
 
 ## What's NOT Included
 
 - UI components (buttons, modals, etc.)
 - Text/copy content
 - dApp-specific feature logic
-- Dependencies on app-specific modules (e.g., social-specific code)
+
+## Supported Chains
+
+| Chain | Chain ID | Environment |
+|-------|----------|-------------|
+| Ethereum Mainnet | 1 | Production |
+| Polygon | 137 | Production |
+| Sepolia | 11155111 | Test |
+| Polygon Amoy | 80002 | Test |
 
 ## Installation
 
@@ -36,18 +45,22 @@ npm install @dcl/web3-core
 
 This library expects the following peer dependencies to be installed in your dApp:
 
-- `react` (^18.0.0)
-- `react-dom` (^18.0.0)
-- `@reduxjs/toolkit` (^2.0.0)
-- `react-redux` (^9.0.0)
-- `wagmi` (^2.0.0)
-- `viem` (^2.0.0)
-- `@tanstack/react-query` (^5.0.0)
-- `@dcl/schemas` (^20.0.0)
+```json
+{
+  "react": "^18.0.0",
+  "react-dom": "^18.0.0",
+  "@reduxjs/toolkit": "^2.0.0",
+  "react-redux": "^9.0.0",
+  "wagmi": "^2.0.0",
+  "viem": "^2.0.0",
+  "@tanstack/react-query": "^5.0.0",
+  "@dcl/schemas": "^20.0.0"
+}
+```
 
 ### Optional (for Magic connector)
 
-If you want to use the Magic connector for social login, install these additional packages:
+If you want to use the Magic connector for social login:
 
 ```bash
 npm install magic-sdk @magic-ext/oauth2
@@ -55,12 +68,12 @@ npm install magic-sdk @magic-ext/oauth2
 
 ## Usage
 
-### Basic Configuration
+### 1. Create wagmi config
 
 ```typescript
 import { createWeb3CoreConfig, magic } from '@dcl/web3-core'
 
-// Basic config with default connectors
+// Basic config with default connectors (injected, WalletConnect, Coinbase)
 const config = createWeb3CoreConfig({
   walletConnectProjectId: 'your-project-id',
   appMetadata: {
@@ -79,7 +92,7 @@ const configWithMagic = createWeb3CoreConfig({
 })
 ```
 
-### 1. Add reducers to your store
+### 2. Add reducers to your Redux store
 
 ```typescript
 import { configureStore } from '@reduxjs/toolkit'
@@ -95,37 +108,124 @@ export const store = configureStore({
 })
 ```
 
-### 2. Wrap your app with providers
+### 3. Wrap your app with providers
 
-```typescript
+```tsx
+import { Provider } from 'react-redux'
 import { Web3CoreProvider, Web3SyncProvider } from '@dcl/web3-core'
+import { store } from './store'
+import { config } from './config'
 
 function App() {
   return (
-    <Web3CoreProvider>
-      <Web3SyncProvider>
-        {/* Your app */}
-      </Web3SyncProvider>
-    </Web3CoreProvider>
+    <Provider store={store}>
+      <Web3CoreProvider config={config}>
+        <Web3SyncProvider>
+          {/* Your app */}
+        </Web3SyncProvider>
+      </Web3CoreProvider>
+    </Provider>
   )
 }
 ```
 
-### 3. Use hooks in your components
+### 4. Use hooks in your components
 
-```typescript
+```tsx
 import { useWallet, useNetwork, useTokenBalance } from '@dcl/web3-core'
 
-function WalletInfo() {
-  const { address, isConnected, connect, disconnect } = useWallet()
-  const { chainId, isSupportedNetwork } = useNetwork()
-  const { balance } = useTokenBalance()
+function WalletButton() {
+  const { address, isConnected, isConnecting, connect, disconnect, connectors } = useWallet()
+  const { chainId, isSupportedNetwork, switchNetwork, chains } = useNetwork()
+  const { balance, symbol } = useTokenBalance()
 
-  // ...
+  if (isConnecting) {
+    return <button disabled>Connecting...</button>
+  }
+
+  if (isConnected) {
+    return (
+      <div>
+        <p>Connected: {address?.slice(0, 6)}...{address?.slice(-4)}</p>
+        <p>Balance: {balance} {symbol}</p>
+        <p>Chain: {chainId} {isSupportedNetwork ? '✓' : '(unsupported)'}</p>
+        <button onClick={disconnect}>Disconnect</button>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {connectors.map((connector) => (
+        <button key={connector.uid} onClick={() => connect(connector)}>
+          Connect with {connector.name}
+        </button>
+      ))}
+    </div>
+  )
 }
 ```
+
+### 5. Track transactions (optional)
+
+```typescript
+import { useDispatch } from 'react-redux'
+import { transactionsActions } from '@dcl/web3-core'
+
+function useTransactionTracker() {
+  const dispatch = useDispatch()
+
+  const trackTransaction = (hash: string, from: string, chainId: number) => {
+    dispatch(transactionsActions.addTransaction({
+      hash,
+      from,
+      chainId,
+      status: 'pending',
+      timestamp: Date.now(),
+    }))
+  }
+
+  const confirmTransaction = (hash: string) => {
+    dispatch(transactionsActions.updateTransaction({
+      hash,
+      status: 'confirmed',
+    }))
+  }
+
+  return { trackTransaction, confirmTransaction }
+}
+```
+
+## API Reference
+
+### Config
+
+- `createWeb3CoreConfig(options)` - Creates a wagmi config with Decentraland defaults
+- `supportedChains` - Array of supported chain objects
+- `isSupportedChain(chainId)` - Check if a chain ID is supported
+- `getChainById(chainId)` - Get chain object by ID
+
+### Connectors
+
+- `magic(options)` - Magic connector for social login
+
+### Providers
+
+- `Web3CoreProvider` - Wraps WagmiProvider + QueryClientProvider
+- `Web3SyncProvider` - Syncs wagmi state to Redux store
+
+### Hooks
+
+- `useWallet()` - Wallet state and connect/disconnect actions
+- `useNetwork()` - Network state and switchNetwork action
+- `useTokenBalance(options?)` - Token balance (native or ERC20)
+
+### Redux
+
+- `walletReducer`, `walletActions` - Wallet state management
+- `networkReducer`, `networkActions` - Network state management
+- `transactionsReducer`, `transactionsActions` - Transaction tracking
 
 ## License
 
 Apache-2.0
-
