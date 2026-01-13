@@ -8,6 +8,9 @@
 // Config
 export * from './config'
 
+// Hooks
+export * from './hooks'
+
 // Providers
 export * from './providers'
 
