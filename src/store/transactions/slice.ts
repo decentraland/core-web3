@@ -11,14 +11,12 @@ const transactionsSlice = createSlice({
   name: 'transactions',
   initialState,
   reducers: {
-    addTransaction(state, action: PayloadAction<Omit<Transaction, 'status' | 'timestamp'>>) {
-      const { hash } = action.payload
-      state.transactions[hash] = {
-        hash,
-        status: 'pending',
-        timestamp: Date.now()
+    addTransaction(state, action: PayloadAction<Transaction>) {
+      const tx = action.payload
+      state.transactions[tx.hash] = tx
+      if (tx.status === 'pending' && !state.pending.includes(tx.hash)) {
+        state.pending.push(tx.hash)
       }
-      state.pending.push(hash)
     },
     updateTransaction(state, action: PayloadAction<{ hash: string; status: TransactionStatus; error?: string }>) {
       const { hash, status, error } = action.payload

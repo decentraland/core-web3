@@ -1,9 +1,12 @@
 // Transaction state types
 
-type TransactionStatus = 'pending' | 'success' | 'error'
+type TransactionStatus = 'pending' | 'confirmed' | 'failed'
 
 interface Transaction {
   hash: string
+  from: string
+  to?: string
+  chainId: number
   status: TransactionStatus
   error?: string
   timestamp: number
