@@ -7,5 +7,6 @@ module.exports = {
   transform: {
     '^.+\\.(t|j)sx?$': '@swc/jest'
   },
-  collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/**/*.spec.{ts,tsx}', '!src/**/*.test.{ts,tsx}', '!src/**/index.ts']
+  collectCoverageFrom: ['src/**/*.{ts,tsx}', '!src/**/*.spec.{ts,tsx}', '!src/**/*.test.{ts,tsx}', '!src/**/index.ts'],
+  coverageReporters: ['text', 'lcov']
 }
