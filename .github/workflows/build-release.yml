@@ -42,9 +42,8 @@ jobs:
       - name: Publish
         uses: decentraland/oddish-action@master
         with:
-          cwd: '.'
           deterministic-snapshot: true
-          provenance: false
+          provenance: true
           registry-url: 'https://registry.npmjs.org'
           access: public
           gitlab-token: ${{ secrets.GITLAB_CDN_DEPLOYER_TOKEN }}
