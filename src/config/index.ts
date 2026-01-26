@@ -4,5 +4,5 @@ export type { SupportedChainId } from './chains'
 export { magic } from './connectors'
 export type { MagicParameters } from './connectors'
 
-export { createWeb3CoreConfig } from './wagmi'
+export { clearWagmiState, createWeb3CoreConfig } from './wagmi'
 export type { Web3CoreConfig, Web3CoreConfigOptions } from './wagmi'
