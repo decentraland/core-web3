@@ -1,17 +1,11 @@
+// Type-only imports - these are erased at compile time and don't add thirdweb to the bundle
+// The actual thirdweb package is imported dynamically at runtime
+import type { Chain as ThirdwebChain, ThirdwebClient } from 'thirdweb'
+import type { Account as ThirdwebAccount, Wallet as ThirdwebWallet } from 'thirdweb/wallets'
 import type { Chain, EIP1193Provider } from 'viem'
 import { createConnector } from 'wagmi'
 import { ChainId } from '@dcl/schemas'
 
-// Thirdweb types - we use any to avoid requiring thirdweb as a dependency
-// The actual thirdweb package is imported dynamically
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ThirdwebClient = any
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ThirdwebWallet = any
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ThirdwebChain = any
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ThirdwebAccount = any
 
 type StorageItem = { thirdwebChainId?: number }
 
