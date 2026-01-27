@@ -47,20 +47,20 @@ This library expects the following peer dependencies to be installed in your dAp
 
 ```json
 {
-  "react": "^18.0.0",
-  "react-dom": "^18.0.0",
-  "@reduxjs/toolkit": "^2.0.0",
-  "react-redux": "^9.0.0",
-  "wagmi": "^2.0.0",
-  "viem": "^2.0.0",
-  "@tanstack/react-query": "^5.0.0",
-  "@dcl/schemas": "^20.0.0"
+  "@dcl/schemas": "^22.0.0",
+  "@reduxjs/toolkit": "^2.5.0",
+  "@tanstack/react-query": "^5.62.0",
+  "react": "^18.3.0",
+  "react-dom": "^18.3.0",
+  "react-redux": "^9.2.0",
+  "viem": "^2.21.0",
+  "wagmi": "^2.14.0"
 }
 ```
 
 ### Optional (for Magic connector)
 
-If you want to use the Magic connector for social login:
+`magic-sdk` is an optional peer dependency. Install it only when using the Magic connector for social login:
 
 ```bash
 npm install magic-sdk @magic-ext/oauth2
@@ -166,7 +166,20 @@ function WalletButton() {
 }
 ```
 
-### 5. Track transactions (optional)
+### 5. Clear wagmi state before auth redirect (optional)
+
+If you redirect users to an external auth flow (e.g. decentraland.org/auth), call `clearWagmiState()` before redirecting. That clears wagmi’s localStorage so that when the user returns, wagmi re-checks wallet authorization instead of restoring a disconnected state.
+
+```typescript
+import { clearWagmiState } from '@dcl/web3-core'
+
+function redirectToAuth() {
+  clearWagmiState()
+  window.location.href = 'https://auth.decentraland.org/...'
+}
+```
+
+### 6. Track transactions (optional)
 
 ```typescript
 import { useDispatch } from 'react-redux'
@@ -201,6 +214,7 @@ function useTransactionTracker() {
 ### Config
 
 - `createWeb3CoreConfig(options)` - Creates a wagmi config with Decentraland defaults
+- `clearWagmiState()` - Clears wagmi localStorage state; use before redirecting to auth so that on return wagmi re-checks wallet authorization
 - `supportedChains` - Array of supported chain objects
 - `isSupportedChain(chainId)` - Check if a chain ID is supported
 - `getChainById(chainId)` - Get chain object by ID
