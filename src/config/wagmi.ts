@@ -191,5 +191,34 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
  */
 type Web3CoreConfig = ReturnType<typeof createWeb3CoreConfig>
 
-export { createWeb3CoreConfig }
+/**
+ * Clears wagmi localStorage state.
+ *
+ * This is necessary because wagmi trusts its stored state. If the user was
+ * disconnected before going to auth, wagmi has saved {connections: [], current: null}.
+ * When returning from auth (even though MetaMask is now authorized), wagmi loads
+ * this "disconnected" state and doesn't re-check authorization.
+ *
+ * The auth site doesn't update our wagmi state (it may use different config/storage),
+ * so we clear it before redirecting to ensure a fresh reconnection on return.
+ */
+function clearWagmiState(): void {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return
+  }
+
+  const keysToRemove: string[] = []
+  const { localStorage } = window
+
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i)
+    if (key?.startsWith('wagmi.')) {
+      keysToRemove.push(key)
+    }
+  }
+
+  keysToRemove.forEach(key => localStorage.removeItem(key))
+}
+
+export { createWeb3CoreConfig, clearWagmiState }
 export type { Web3CoreConfig, Web3CoreConfigOptions }
