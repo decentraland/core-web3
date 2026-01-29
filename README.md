@@ -79,9 +79,11 @@ const config = createWeb3CoreConfig({
   appMetadata: {
     name: 'My Decentraland App',
     description: 'An awesome dApp',
-    url: 'https://myapp.decentraland.org',
+    urlPath: '/my-app',
   },
 })
+
+// Use appMetadata.url if your app uses a custom domain
 
 // With Magic connector for social login
 const configWithMagic = createWeb3CoreConfig({
@@ -214,6 +216,7 @@ function useTransactionTracker() {
 ### Config
 
 - `createWeb3CoreConfig(options)` - Creates a wagmi config with Decentraland defaults
+- `transports` defaults to Decentraland RPCs for supported chains (override per chain if needed)
 - `clearWagmiState()` - Clears wagmi localStorage state; use before redirecting to auth so that on return wagmi re-checks wallet authorization
 - `supportedChains` - Array of supported chain objects
 - `isSupportedChain(chainId)` - Check if a chain ID is supported
