@@ -6,7 +6,6 @@ import type { Chain, EIP1193Provider } from 'viem'
 import { createConnector } from 'wagmi'
 import { ChainId } from '@dcl/schemas'
 
-
 type StorageItem = { thirdwebChainId?: number }
 
 interface ThirdwebParameters {
@@ -23,14 +22,14 @@ interface ThirdwebParameters {
  * allowing users to sign in with email OTP authentication.
  *
  * Important: The user must already be logged in via Thirdweb (typically through
- * the auth dapp). This connector only maintains the session,
+ * the auth dapp at decentraland.org/auth). This connector only maintains the session,
  * it does not initiate the Thirdweb login flow.
  *
  * Uses thirdweb's official EIP1193.toProvider() adapter which provides
  * a fully compliant EIP-1193 provider with all RPC methods supported.
  *
  * Flow:
- * 1. User goes to auth.decentraland.org and logs in with email OTP
+ * 1. User goes to decentraland.org/auth and logs in with email OTP
  * 2. Auth dapp creates thirdweb session and redirects back
  * 3. This connector detects the thirdweb session and connects
  */
@@ -108,6 +107,27 @@ function thirdweb(parameters: ThirdwebParameters) {
     })
   }
 
+  /**
+   * Validate that a chainId is supported
+   */
+  function validateChainId(chainId: number): void {
+    if (!supportedChainIds.includes(chainId as ChainId)) {
+      throw new Error(`Thirdweb: Chain ${chainId} is not supported. Supported chains: ${supportedChainIds.join(', ')}`)
+    }
+  }
+
+  /**
+   * Clear all internal state
+   */
+  function clearState(): void {
+    wallet = null
+    client = null
+    chain = null
+    account = null
+    eip1193Provider = null
+    currentChainId = null
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return createConnector<EIP1193Provider, any, StorageItem>((config) => {
     /**
@@ -143,29 +163,42 @@ function thirdweb(parameters: ThirdwebParameters) {
         const savedChainId = await config.storage?.getItem('thirdwebChainId')
         const chainId = savedChainId ?? config.chains[0]?.id
 
-        if (chainId) {
-          try {
-            wallet = await getInAppWallet()
-            const clientInstance = await getThirdwebClient()
+        if (!chainId) {
+          return
+        }
 
-            // Auto-connect to existing session (without chain, like decentraland-connect)
-            account = await wallet.autoConnect({ client: clientInstance })
+        try {
+          wallet = await getInAppWallet()
+          const clientInstance = await getThirdwebClient()
 
-            if (account) {
-              const connection = await initializeConnection(chainId)
+          // Auto-connect to existing session (without chain, like decentraland-connect)
+          account = await wallet.autoConnect({ client: clientInstance })
 
-              if (connection) {
-                config.emitter.emit('connect', connection)
-              }
-            }
-          } catch {
-            // User not logged in or Thirdweb not available
+          if (!account) {
+            return
           }
+
+          const connection = await initializeConnection(chainId)
+
+          if (!connection) {
+            return
+          }
+
+          config.emitter.emit('connect', connection)
+        } catch {
+          // User not logged in or Thirdweb not available
         }
       },
 
       async connect({ chainId: requestedChainId }: { chainId?: number } = {}) {
-        const targetChainId = requestedChainId ?? config.chains[0].id
+        const targetChainId = requestedChainId ?? config.chains[0]?.id
+
+        if (!targetChainId) {
+          throw new Error('Thirdweb: No chain ID provided and no chains configured')
+        }
+
+        // Validate the requested chain is supported
+        validateChainId(targetChainId)
 
         if (!wallet) {
           wallet = await getInAppWallet()
@@ -177,9 +210,7 @@ function thirdweb(parameters: ThirdwebParameters) {
           // Auto-connect to existing session (without chain, like decentraland-connect)
           account = await wallet.autoConnect({ client: clientInstance })
         } catch {
-          throw new Error(
-            'Thirdweb: No active session. User must authenticate first.'
-          )
+          throw new Error('Thirdweb: No active session. User must authenticate first.')
         }
 
         if (!account) {
@@ -199,12 +230,7 @@ function thirdweb(parameters: ThirdwebParameters) {
         if (wallet) {
           await wallet.disconnect()
         }
-        wallet = null
-        client = null
-        chain = null
-        account = null
-        eip1193Provider = null
-        currentChainId = null
+        clearState()
         await config.storage?.removeItem('thirdwebChainId')
       },
 
@@ -217,7 +243,7 @@ function thirdweb(parameters: ThirdwebParameters) {
 
       async getChainId() {
         const savedChainId = await config.storage?.getItem('thirdwebChainId')
-        return savedChainId ?? config.chains[0].id
+        return savedChainId ?? currentChainId ?? config.chains[0]?.id
       },
 
       async getProvider() {
@@ -240,9 +266,11 @@ function thirdweb(parameters: ThirdwebParameters) {
                   const newChainIdHex = (params as any)?.[0]?.chainId
                   const newChainId = parseInt(newChainIdHex, 16)
 
-                  if (!supportedChainIds.includes(newChainId as ChainId)) {
-                    throw new Error('Thirdweb: unsupported chain')
+                  if (Number.isNaN(newChainId)) {
+                    throw new Error('Thirdweb: Invalid chain ID')
                   }
+
+                  validateChainId(newChainId)
 
                   // Reset chain and provider to be recreated
                   chain = null
@@ -303,9 +331,7 @@ function thirdweb(parameters: ThirdwebParameters) {
           throw new Error(`Chain ${newChainId} not configured`)
         }
 
-        if (!supportedChainIds.includes(newChainId as ChainId)) {
-          throw new Error('Thirdweb: unsupported chain')
-        }
+        validateChainId(newChainId)
 
         if (!wallet || !account) {
           throw new Error('Thirdweb: Not connected')
@@ -338,18 +364,19 @@ function thirdweb(parameters: ThirdwebParameters) {
       },
 
       onChainChanged(chainIdHex: string) {
-        const chainId = Number(chainIdHex)
+        const chainId = parseInt(chainIdHex, 16)
+        if (Number.isNaN(chainId)) {
+          return
+        }
         config.emitter.emit('change', { chainId })
       },
 
       onDisconnect() {
         config.emitter.emit('disconnect')
-        wallet = null
-        client = null
-        chain = null
-        account = null
-        eip1193Provider = null
-        currentChainId = null
+        clearState()
+        // Note: storage cleanup is async but onDisconnect is sync
+        // We fire and forget here since it's cleanup
+        void config.storage?.removeItem('thirdwebChainId')
       },
     }
   })
