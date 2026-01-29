@@ -2,11 +2,36 @@ import type { Chain, Transport } from 'viem'
 import { createConfig, http } from 'wagmi'
 import type { CreateConnectorFn } from 'wagmi'
 import { coinbaseWallet, injected, walletConnect } from 'wagmi/connectors'
+import { ChainId } from '@dcl/schemas'
 import { supportedChains } from './chains'
 
 /**
  * Configuration options for creating a Web3 Core config.
  */
+type AppMetadata = {
+  /** Application name displayed in wallet connection prompts */
+  name: string
+  /** Application description */
+  description?: string
+  /** Application URL */
+  url: string
+  /** Application icons (URLs) */
+  icons?: string[]
+}
+
+type AppMetadataInput = {
+  /** Application name displayed in wallet connection prompts */
+  name?: string
+  /** Application description */
+  description?: string
+  /** Application URL */
+  url?: string
+  /** Application URL path relative to https://decentraland.org */
+  urlPath?: string
+  /** Application icons (URLs) */
+  icons?: string[]
+}
+
 interface Web3CoreConfigOptions {
   /**
    * WalletConnect Cloud project ID.
@@ -19,16 +44,7 @@ interface Web3CoreConfigOptions {
    * Application metadata used by wallet connectors.
    * Displayed to users when connecting their wallet.
    */
-  appMetadata?: {
-    /** Application name displayed in wallet connection prompts */
-    name: string
-    /** Application description */
-    description?: string
-    /** Application URL */
-    url?: string
-    /** Application icons (URLs) */
-    icons?: string[]
-  }
+  appMetadata?: AppMetadataInput
 
   /**
    * Blockchain networks to support.
@@ -39,7 +55,7 @@ interface Web3CoreConfigOptions {
   /**
    * Custom transport configuration per chain.
    * Keys are chain IDs, values are viem Transport instances.
-   * @default http() for each chain
+   * @default Decentraland RPCs for supported chains, http() fallback otherwise
    */
   transports?: Record<number, Transport>
 
@@ -78,11 +94,56 @@ interface Web3CoreConfigOptions {
  * Default application metadata for Decentraland dApps.
  * @internal
  */
-const defaultAppMetadata = {
+const defaultAppMetadata: AppMetadata = {
   name: 'Decentraland',
   description: 'Decentraland dApp',
   url: 'https://decentraland.org',
   icons: ['https://cdn.decentraland.org/@dcl/marketplace-site/6.41.1/favicon.ico']
+}
+
+const DEFAULT_RPC_URLS: Record<number, string> = {
+  [ChainId.ETHEREUM_MAINNET]: 'https://rpc.decentraland.org/mainnet',
+  [ChainId.ETHEREUM_SEPOLIA]: 'https://rpc.decentraland.org/sepolia',
+  [ChainId.MATIC_MAINNET]: 'https://rpc.decentraland.org/polygon',
+  [ChainId.MATIC_AMOY]: 'https://rpc.decentraland.org/amoy'
+}
+
+const defaultTransports = supportedChains.reduce(
+  (acc, chain) => {
+    const rpcUrl = DEFAULT_RPC_URLS[chain.id]
+    acc[chain.id] = rpcUrl ? http(rpcUrl) : http()
+    return acc
+  },
+  {} as Record<number, Transport>
+)
+
+function buildAppUrl(baseUrl: string, path: string): string {
+  const trimmedPath = path.trim()
+
+  if (!trimmedPath) {
+    return baseUrl
+  }
+
+  const normalizedBase = baseUrl.replace(/\/+$/, '')
+  const normalizedPath = trimmedPath.startsWith('/') ? trimmedPath : `/${trimmedPath}`
+
+  return `${normalizedBase}${normalizedPath}`
+}
+
+function resolveAppMetadata(overrides?: AppMetadataInput): AppMetadata {
+  if (!overrides) {
+    return defaultAppMetadata
+  }
+
+  const resolvedUrl =
+    overrides.url ?? (overrides.urlPath ? buildAppUrl(defaultAppMetadata.url, overrides.urlPath) : defaultAppMetadata.url)
+
+  return {
+    name: overrides.name ?? defaultAppMetadata.name,
+    description: overrides.description ?? defaultAppMetadata.description,
+    url: resolvedUrl,
+    icons: overrides.icons ?? defaultAppMetadata.icons
+  }
 }
 
 /**
@@ -127,12 +188,14 @@ const defaultAppMetadata = {
 function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
   const {
     walletConnectProjectId,
-    appMetadata = defaultAppMetadata,
+    appMetadata: appMetadataOverrides,
     chains = supportedChains,
     transports: customTransports,
     connectors: connectorOptions = {},
     additionalConnectors = []
   } = options
+
+  const appMetadata = resolveAppMetadata(appMetadataOverrides)
 
   const {
     injected: enableInjected = true,
@@ -142,7 +205,7 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
 
   const transports = chains.reduce(
     (acc, chain) => {
-      acc[chain.id] = customTransports?.[chain.id] ?? http()
+      acc[chain.id] = customTransports?.[chain.id] ?? defaultTransports[chain.id] ?? http()
       return acc
     },
     {} as Record<number, Transport>
