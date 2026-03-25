@@ -48,23 +48,21 @@ function Web3SyncProvider({ children }: Web3SyncProviderProps) {
   const { address, isConnecting, isConnected, isReconnecting } = useAccount()
   const chainId = useChainId()
 
+  // Sync wallet state atomically to avoid brief inconsistent states
+  // when multiple wagmi values change at once (e.g. during disconnect)
   useEffect(() => {
-    dispatch(walletActions.setAccount(address ?? null))
-  }, [dispatch, address])
+    if (isConnected && address) {
+      dispatch(walletActions.setAccount(address))
+      dispatch(networkActions.setChain(chainId))
+    } else if (!isConnected && !isConnecting && !isReconnecting) {
+      dispatch(walletActions.reset())
+      dispatch(networkActions.setChain(null))
+    }
+  }, [dispatch, address, isConnected, isConnecting, isReconnecting, chainId])
 
   useEffect(() => {
     dispatch(walletActions.setConnecting(isConnecting || isReconnecting))
   }, [dispatch, isConnecting, isReconnecting])
-
-  useEffect(() => {
-    if (!isConnected) {
-      dispatch(walletActions.reset())
-    }
-  }, [dispatch, isConnected])
-
-  useEffect(() => {
-    dispatch(networkActions.setChain(isConnected ? chainId : null))
-  }, [dispatch, chainId, isConnected])
 
   return <>{children}</>
 }

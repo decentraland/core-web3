@@ -135,8 +135,7 @@ function resolveAppMetadata(overrides?: AppMetadataInput): AppMetadata {
     return defaultAppMetadata
   }
 
-  const resolvedUrl =
-    overrides.url ?? (overrides.urlPath ? buildAppUrl(defaultAppMetadata.url, overrides.urlPath) : defaultAppMetadata.url)
+  const resolvedUrl = overrides.url ?? (overrides.urlPath ? buildAppUrl(defaultAppMetadata.url, overrides.urlPath) : defaultAppMetadata.url)
 
   return {
     name: overrides.name ?? defaultAppMetadata.name,
