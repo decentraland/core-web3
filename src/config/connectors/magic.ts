@@ -247,7 +247,8 @@ function magic(parameters: MagicParameters) {
       },
 
       onChainChanged(chain: string) {
-        const chainId = Number(chain)
+        // EIP-1193 specifies chain IDs as hex strings
+        const chainId = chain.startsWith('0x') ? parseInt(chain, 16) : Number(chain)
         config.emitter.emit('change', { chainId })
       },
 

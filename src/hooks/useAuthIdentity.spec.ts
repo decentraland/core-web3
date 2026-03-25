@@ -1,5 +1,6 @@
 import { renderHook } from '@testing-library/react'
 import type { AuthIdentity } from '@dcl/crypto'
+import * as ssoClient from '@dcl/single-sign-on-client'
 import { useAuthIdentity } from './useAuthIdentity'
 
 const mockUseWallet = jest.fn()
@@ -12,10 +13,7 @@ jest.mock('@dcl/single-sign-on-client', () => ({
   localStorageGetIdentity: jest.fn()
 }))
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { localStorageGetIdentity } = require('@dcl/single-sign-on-client') as {
-  localStorageGetIdentity: jest.Mock
-}
+const localStorageGetIdentity = ssoClient.localStorageGetIdentity as jest.Mock
 
 describe('useAuthIdentity', () => {
   const mockAddress = '0x1234567890abcdef1234567890abcdef12345678' as `0x${string}`

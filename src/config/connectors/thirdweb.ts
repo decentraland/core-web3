@@ -103,7 +103,7 @@ function thirdweb(parameters: ThirdwebParameters) {
     return EIP1193.toProvider({
       wallet: walletInstance,
       chain: chainInstance,
-      client: clientInstance,
+      client: clientInstance
     })
   }
 
@@ -129,13 +129,11 @@ function thirdweb(parameters: ThirdwebParameters) {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return createConnector<EIP1193Provider, any, StorageItem>((config) => {
+  return createConnector<EIP1193Provider, any, StorageItem>(config => {
     /**
      * Initialize connection and create the EIP-1193 provider
      */
-    async function initializeConnection(
-      chainId: number
-    ): Promise<{ accounts: readonly `0x${string}`[]; chainId: number } | null> {
+    async function initializeConnection(chainId: number): Promise<{ accounts: readonly `0x${string}`[]; chainId: number } | null> {
       if (!account || !wallet) {
         return null
       }
@@ -149,7 +147,7 @@ function thirdweb(parameters: ThirdwebParameters) {
 
       return {
         accounts: [account.address as `0x${string}`],
-        chainId,
+        chainId
       }
     }
 
@@ -251,10 +249,10 @@ function thirdweb(parameters: ThirdwebParameters) {
           throw new Error('Thirdweb: wallet is not connected. Call connect() first.')
         }
 
-        // Wrap the thirdweb provider to handle wallet_switchEthereumChain
-        const originalProvider = eip1193Provider
-        return new Proxy(originalProvider, {
-          get(target, prop) {
+        // Wrap via empty target so request() always delegates to the current
+        // eip1193Provider, not the one captured at proxy-creation time.
+        return new Proxy({} as EIP1193Provider, {
+          get(_target, prop) {
             if (prop === 'request') {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               return async (args: any) => {
@@ -288,11 +286,11 @@ function thirdweb(parameters: ThirdwebParameters) {
                   return null
                 }
 
-                return target.request(args)
+                return eip1193Provider!.request(args)
               }
             }
-            return Reflect.get(target, prop)
-          },
+            return Reflect.get(eip1193Provider!, prop)
+          }
         }) as EIP1193Provider
       },
 
@@ -325,7 +323,7 @@ function thirdweb(parameters: ThirdwebParameters) {
       },
 
       async switchChain({ chainId: newChainId }: { chainId: number }): Promise<Chain> {
-        const chainConfig = config.chains.find((c) => c.id === newChainId)
+        const chainConfig = config.chains.find(c => c.id === newChainId)
 
         if (!chainConfig) {
           throw new Error(`Chain ${newChainId} not configured`)
@@ -358,7 +356,7 @@ function thirdweb(parameters: ThirdwebParameters) {
           this.onDisconnect()
         } else {
           config.emitter.emit('change', {
-            accounts: accounts as readonly `0x${string}`[],
+            accounts: accounts as readonly `0x${string}`[]
           })
         }
       },
@@ -377,7 +375,7 @@ function thirdweb(parameters: ThirdwebParameters) {
         // Note: storage cleanup is async but onDisconnect is sync
         // We fire and forget here since it's cleanup
         void config.storage?.removeItem('thirdwebChainId')
-      },
+      }
     }
   })
 }

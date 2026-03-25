@@ -65,7 +65,10 @@ describe('transactionsSlice', () => {
       it('should update the transaction status', () => {
         const state = transactionsReducer(
           initialState,
-          transactionsActions.updateTransaction({ hash: existingTransaction.hash, status: 'confirmed' })
+          transactionsActions.updateTransaction({
+            hash: existingTransaction.hash,
+            status: 'confirmed'
+          })
         )
         expect(state.transactions[existingTransaction.hash].status).toBe('confirmed')
       })
@@ -73,7 +76,10 @@ describe('transactionsSlice', () => {
       it('should remove the hash from pending list', () => {
         const state = transactionsReducer(
           initialState,
-          transactionsActions.updateTransaction({ hash: existingTransaction.hash, status: 'confirmed' })
+          transactionsActions.updateTransaction({
+            hash: existingTransaction.hash,
+            status: 'confirmed'
+          })
         )
         expect(state.pending).not.toContain(existingTransaction.hash)
       })
@@ -83,7 +89,10 @@ describe('transactionsSlice', () => {
       it('should update the transaction status', () => {
         const state = transactionsReducer(
           initialState,
-          transactionsActions.updateTransaction({ hash: existingTransaction.hash, status: 'failed' })
+          transactionsActions.updateTransaction({
+            hash: existingTransaction.hash,
+            status: 'failed'
+          })
         )
         expect(state.transactions[existingTransaction.hash].status).toBe('failed')
       })
@@ -91,7 +100,10 @@ describe('transactionsSlice', () => {
       it('should remove the hash from pending list', () => {
         const state = transactionsReducer(
           initialState,
-          transactionsActions.updateTransaction({ hash: existingTransaction.hash, status: 'failed' })
+          transactionsActions.updateTransaction({
+            hash: existingTransaction.hash,
+            status: 'failed'
+          })
         )
         expect(state.pending).not.toContain(existingTransaction.hash)
       })
