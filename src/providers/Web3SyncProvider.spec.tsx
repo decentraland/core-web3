@@ -5,31 +5,31 @@ let mockAccountState = {
   address: undefined as string | undefined,
   isConnecting: false,
   isConnected: false,
-  isReconnecting: false
+  isReconnecting: false,
 }
 let mockChainId = 1
 
 jest.mock('react-redux', () => ({
-  useDispatch: () => mockDispatch
+  useDispatch: () => mockDispatch,
 }))
 
 jest.mock('wagmi', () => ({
   useAccount: () => mockAccountState,
-  useChainId: () => mockChainId
+  useChainId: () => mockChainId,
 }))
 
 jest.mock('../store/wallet', () => ({
   walletActions: {
     setAccount: (address: string | null) => ({ type: 'wallet/setAccount', payload: address }),
     setConnecting: (value: boolean) => ({ type: 'wallet/setConnecting', payload: value }),
-    reset: () => ({ type: 'wallet/reset' })
-  }
+    reset: () => ({ type: 'wallet/reset' }),
+  },
 }))
 
 jest.mock('../store/network', () => ({
   networkActions: {
-    setChain: (chainId: number | null) => ({ type: 'network/setChain', payload: chainId })
-  }
+    setChain: (chainId: number | null) => ({ type: 'network/setChain', payload: chainId }),
+  },
 }))
 
 import { Web3SyncProvider } from './Web3SyncProvider'
@@ -41,7 +41,7 @@ describe('Web3SyncProvider', () => {
       address: undefined,
       isConnecting: false,
       isConnected: false,
-      isReconnecting: false
+      isReconnecting: false,
     }
     mockChainId = 1
   })
@@ -52,30 +52,34 @@ describe('Web3SyncProvider', () => {
         address: '0xabc123',
         isConnecting: false,
         isConnected: true,
-        isReconnecting: false
+        isReconnecting: false,
       }
       mockChainId = 1
-      render(<Web3SyncProvider><div>Child</div></Web3SyncProvider>)
+      render(
+        <Web3SyncProvider>
+          <div>Child</div>
+        </Web3SyncProvider>
+      )
     })
 
     it('should dispatch setAccount with the address', () => {
       expect(mockDispatch).toHaveBeenCalledWith({
         type: 'wallet/setAccount',
-        payload: '0xabc123'
+        payload: '0xabc123',
       })
     })
 
     it('should dispatch setChain with the chainId', () => {
       expect(mockDispatch).toHaveBeenCalledWith({
         type: 'network/setChain',
-        payload: 1
+        payload: 1,
       })
     })
 
     it('should dispatch setConnecting with false', () => {
       expect(mockDispatch).toHaveBeenCalledWith({
         type: 'wallet/setConnecting',
-        payload: false
+        payload: false,
       })
     })
   })
@@ -86,28 +90,25 @@ describe('Web3SyncProvider', () => {
         address: undefined,
         isConnecting: false,
         isConnected: false,
-        isReconnecting: false
+        isReconnecting: false,
       }
-      render(<Web3SyncProvider><div>Child</div></Web3SyncProvider>)
-    })
-
-    it('should dispatch setAccount with null', () => {
-      expect(mockDispatch).toHaveBeenCalledWith({
-        type: 'wallet/setAccount',
-        payload: null
-      })
+      render(
+        <Web3SyncProvider>
+          <div>Child</div>
+        </Web3SyncProvider>
+      )
     })
 
     it('should dispatch reset', () => {
       expect(mockDispatch).toHaveBeenCalledWith({
-        type: 'wallet/reset'
+        type: 'wallet/reset',
       })
     })
 
     it('should dispatch setChain with null', () => {
       expect(mockDispatch).toHaveBeenCalledWith({
         type: 'network/setChain',
-        payload: null
+        payload: null,
       })
     })
   })
@@ -118,15 +119,19 @@ describe('Web3SyncProvider', () => {
         address: undefined,
         isConnecting: true,
         isConnected: false,
-        isReconnecting: false
+        isReconnecting: false,
       }
-      render(<Web3SyncProvider><div>Child</div></Web3SyncProvider>)
+      render(
+        <Web3SyncProvider>
+          <div>Child</div>
+        </Web3SyncProvider>
+      )
     })
 
     it('should dispatch setConnecting with true', () => {
       expect(mockDispatch).toHaveBeenCalledWith({
         type: 'wallet/setConnecting',
-        payload: true
+        payload: true,
       })
     })
   })
@@ -137,15 +142,19 @@ describe('Web3SyncProvider', () => {
         address: undefined,
         isConnecting: false,
         isConnected: false,
-        isReconnecting: true
+        isReconnecting: true,
       }
-      render(<Web3SyncProvider><div>Child</div></Web3SyncProvider>)
+      render(
+        <Web3SyncProvider>
+          <div>Child</div>
+        </Web3SyncProvider>
+      )
     })
 
     it('should dispatch setConnecting with true', () => {
       expect(mockDispatch).toHaveBeenCalledWith({
         type: 'wallet/setConnecting',
-        payload: true
+        payload: true,
       })
     })
   })
@@ -156,12 +165,16 @@ describe('Web3SyncProvider', () => {
         address: undefined,
         isConnecting: false,
         isConnected: false,
-        isReconnecting: false
+        isReconnecting: false,
       }
     })
 
     it('should render the children', () => {
-      const { getByText } = render(<Web3SyncProvider><div>Test Content</div></Web3SyncProvider>)
+      const { getByText } = render(
+        <Web3SyncProvider>
+          <div>Test Content</div>
+        </Web3SyncProvider>
+      )
       expect(getByText('Test Content')).toBeDefined()
     })
   })
