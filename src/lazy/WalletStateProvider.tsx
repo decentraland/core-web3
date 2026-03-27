@@ -104,5 +104,5 @@ function WalletStateProvider({ children }: PropsWithChildren) {
   )
 }
 
-export { WalletStateContext, WalletStateProvider, WalletStateSetterContext }
+export { readWagmiLocalStorage, WalletStateContext, WalletStateProvider, WalletStateSetterContext }
 export type { WalletState }
