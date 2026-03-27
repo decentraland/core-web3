@@ -73,10 +73,15 @@ function Web3LazyProvider({
   children,
 }: PropsWithChildren<Web3LazyProviderProps>) {
   const [Inner, setInner] = useState<ComponentType<Web3InnerProps> | null>(null)
+  const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
-    import('./Web3Inner').then((m) => setInner(() => m.Web3Inner))
+    import('./Web3Inner')
+      .then((m) => setInner(() => m.Web3Inner))
+      .catch(setError)
   }, [])
+
+  if (error) throw error
 
   if (!Inner) return <>{children}</>
 

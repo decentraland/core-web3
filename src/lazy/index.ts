@@ -1,8 +1,4 @@
-export {
-  WalletStateContext,
-  WalletStateProvider,
-  WalletStateSetterContext,
-} from './WalletStateProvider'
+export { WalletStateContext, WalletStateProvider } from './WalletStateProvider'
 export type { WalletState } from './WalletStateProvider'
 
 export { useWalletState } from './useWalletState'
