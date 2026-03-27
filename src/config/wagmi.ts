@@ -4,6 +4,7 @@ import type { CreateConnectorFn } from 'wagmi'
 import { coinbaseWallet, injected, walletConnect } from 'wagmi/connectors'
 import { ChainId } from '@dcl/schemas'
 import { supportedChains } from './chains'
+import { magic } from './connectors/magic'
 
 /**
  * Configuration options for creating a Web3 Core config.
@@ -35,10 +36,24 @@ type AppMetadataInput = {
 interface Web3CoreConfigOptions {
   /**
    * WalletConnect Cloud project ID.
-   * Required to enable WalletConnect connector.
-   * Get one at https://cloud.walletconnect.com
+   * @default Decentraland shared project ID
    */
   walletConnectProjectId?: string
+
+  /**
+   * Magic API key for social login connector.
+   * When provided, the Magic connector is automatically added.
+   * @default Decentraland shared key based on `environment`
+   */
+  magicApiKey?: string | false
+
+  /**
+   * Decentraland environment used to select default API keys.
+   * Only used when `walletConnectProjectId` or `magicApiKey` are not
+   * explicitly provided.
+   * @default 'dev'
+   */
+  environment?: 'dev' | 'stg' | 'prd'
 
   /**
    * Application metadata used by wallet connectors.
@@ -70,22 +85,13 @@ interface Web3CoreConfigOptions {
     walletConnect?: boolean
     /** Enable Coinbase Wallet connector @default true */
     coinbaseWallet?: boolean
+    /** Enable Magic connector for social login @default true */
+    magic?: boolean
   }
 
   /**
    * Additional custom connectors to include.
-   * Use this to add connectors like Magic for social login.
-   *
-   * @example
-   * ```ts
-   * import { magic } from '@dcl/core-web3'
-   *
-   * const config = createWeb3CoreConfig({
-   *   additionalConnectors: [
-   *     magic({ apiKey: '...', rpcUrl: '...', chainId: 1 }),
-   *   ],
-   * })
-   * ```
+   * Use this to add connectors beyond the built-in ones.
    */
   additionalConnectors?: CreateConnectorFn[]
 }
@@ -98,14 +104,22 @@ const defaultAppMetadata: AppMetadata = {
   name: 'Decentraland',
   description: 'Decentraland dApp',
   url: 'https://decentraland.org',
-  icons: ['https://cdn.decentraland.org/@dcl/marketplace-site/6.41.1/favicon.ico']
+  icons: ['https://cdn.decentraland.org/@dcl/marketplace-site/6.41.1/favicon.ico'],
+}
+
+const DEFAULT_WALLET_CONNECT_PROJECT_ID = '61570c542c2d66c659492e5b24a41522'
+
+const DEFAULT_MAGIC_API_KEYS: Record<string, string> = {
+  dev: 'pk_live_CE856A4938B36648',
+  stg: 'pk_live_CE856A4938B36648',
+  prd: 'pk_live_212568025B158355',
 }
 
 const DEFAULT_RPC_URLS: Record<number, string> = {
   [ChainId.ETHEREUM_MAINNET]: 'https://rpc.decentraland.org/mainnet',
   [ChainId.ETHEREUM_SEPOLIA]: 'https://rpc.decentraland.org/sepolia',
   [ChainId.MATIC_MAINNET]: 'https://rpc.decentraland.org/polygon',
-  [ChainId.MATIC_AMOY]: 'https://rpc.decentraland.org/amoy'
+  [ChainId.MATIC_AMOY]: 'https://rpc.decentraland.org/amoy',
 }
 
 const defaultTransports = supportedChains.reduce(
@@ -135,13 +149,17 @@ function resolveAppMetadata(overrides?: AppMetadataInput): AppMetadata {
     return defaultAppMetadata
   }
 
-  const resolvedUrl = overrides.url ?? (overrides.urlPath ? buildAppUrl(defaultAppMetadata.url, overrides.urlPath) : defaultAppMetadata.url)
+  const resolvedUrl =
+    overrides.url ??
+    (overrides.urlPath
+      ? buildAppUrl(defaultAppMetadata.url, overrides.urlPath)
+      : defaultAppMetadata.url)
 
   return {
     name: overrides.name ?? defaultAppMetadata.name,
     description: overrides.description ?? defaultAppMetadata.description,
     url: resolvedUrl,
-    icons: overrides.icons ?? defaultAppMetadata.icons
+    icons: overrides.icons ?? defaultAppMetadata.icons,
   }
 }
 
@@ -186,12 +204,14 @@ function resolveAppMetadata(overrides?: AppMetadataInput): AppMetadata {
  */
 function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
   const {
-    walletConnectProjectId,
+    walletConnectProjectId = DEFAULT_WALLET_CONNECT_PROJECT_ID,
+    magicApiKey,
+    environment = 'dev',
     appMetadata: appMetadataOverrides,
     chains = supportedChains,
     transports: customTransports,
     connectors: connectorOptions = {},
-    additionalConnectors = []
+    additionalConnectors = [],
   } = options
 
   const appMetadata = resolveAppMetadata(appMetadataOverrides)
@@ -199,7 +219,8 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
   const {
     injected: enableInjected = true,
     walletConnect: enableWalletConnect = true,
-    coinbaseWallet: enableCoinbaseWallet = true
+    coinbaseWallet: enableCoinbaseWallet = true,
+    magic: enableMagic = true,
   } = connectorOptions
 
   const transports = chains.reduce(
@@ -224,8 +245,8 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
           name: appMetadata.name,
           description: appMetadata.description ?? '',
           url: appMetadata.url ?? '',
-          icons: appMetadata.icons ?? []
-        }
+          icons: appMetadata.icons ?? [],
+        },
       })
     )
   }
@@ -233,9 +254,15 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
   if (enableCoinbaseWallet) {
     connectors.push(
       coinbaseWallet({
-        appName: appMetadata.name
+        appName: appMetadata.name,
       })
     )
+  }
+
+  const resolvedMagicKey =
+    magicApiKey === false ? undefined : (magicApiKey ?? DEFAULT_MAGIC_API_KEYS[environment])
+  if (enableMagic && resolvedMagicKey) {
+    connectors.push(magic({ apiKey: resolvedMagicKey }))
   }
 
   connectors.push(...additionalConnectors)
@@ -243,7 +270,7 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
   return createConfig({
     chains,
     transports,
-    connectors
+    connectors,
   })
 }
 
@@ -279,7 +306,7 @@ function clearWagmiState(): void {
     }
   }
 
-  keysToRemove.forEach(key => localStorage.removeItem(key))
+  keysToRemove.forEach((key) => localStorage.removeItem(key))
 }
 
 export { createWeb3CoreConfig, clearWagmiState }
