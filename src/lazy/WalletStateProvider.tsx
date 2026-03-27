@@ -18,7 +18,7 @@ const DEFAULT_STATE: WalletState = {
   isConnected: false,
   isConnecting: false,
   isDisconnecting: false,
-  disconnect: () => {}
+  disconnect: () => {},
 }
 
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -90,14 +90,16 @@ function WalletStateProvider({ children }: PropsWithChildren) {
   const initial = useMemo(() => readWagmiLocalStorage(), [])
   const [state, setState] = useState<WalletState>(() => ({
     ...DEFAULT_STATE,
-    ...initial
+    ...initial,
   }))
 
   const setter = useCallback((next: WalletState) => setState(next), [])
 
   return (
     <WalletStateContext.Provider value={state}>
-      <WalletStateSetterContext.Provider value={setter}>{children}</WalletStateSetterContext.Provider>
+      <WalletStateSetterContext.Provider value={setter}>
+        {children}
+      </WalletStateSetterContext.Provider>
     </WalletStateContext.Provider>
   )
 }

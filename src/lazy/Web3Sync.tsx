@@ -1,4 +1,4 @@
-import { type PropsWithChildren, useContext, useEffect } from 'react'
+import { type PropsWithChildren, useContext, useLayoutEffect } from 'react'
 import { useWallet } from '../hooks/useWallet'
 import { WalletStateSetterContext } from './WalletStateProvider'
 
@@ -13,15 +13,22 @@ function Web3Sync({ children }: PropsWithChildren) {
   const wallet = useWallet()
   const setWalletState = useContext(WalletStateSetterContext)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     setWalletState({
       address: wallet.address,
       isConnected: wallet.isConnected,
       isConnecting: wallet.isConnecting,
       isDisconnecting: wallet.isDisconnecting,
-      disconnect: wallet.disconnect
+      disconnect: wallet.disconnect,
     })
-  }, [wallet.address, wallet.isConnected, wallet.isConnecting, wallet.isDisconnecting, wallet.disconnect, setWalletState])
+  }, [
+    wallet.address,
+    wallet.isConnected,
+    wallet.isConnecting,
+    wallet.isDisconnecting,
+    wallet.disconnect,
+    setWalletState,
+  ])
 
   return <>{children}</>
 }

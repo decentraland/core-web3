@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import type { PropsWithChildren } from 'react'
 import type { QueryClient } from '@tanstack/react-query'
 import type { Web3CoreConfig } from '../config/wagmi'
@@ -11,6 +12,7 @@ import { Web3Sync } from './Web3Sync'
 interface Web3InnerProps {
   config: Web3CoreConfig
   queryClient?: QueryClient
+  onLoad?: () => void
 }
 
 /**
@@ -21,7 +23,11 @@ interface Web3InnerProps {
  *
  * @internal
  */
-function Web3Inner({ config, queryClient, children }: PropsWithChildren<Web3InnerProps>) {
+function Web3Inner({ config, queryClient, onLoad, children }: PropsWithChildren<Web3InnerProps>) {
+  useEffect(() => {
+    onLoad?.()
+  }, [onLoad])
+
   return (
     <Web3CoreProvider config={config} queryClient={queryClient}>
       <Web3SyncProvider>

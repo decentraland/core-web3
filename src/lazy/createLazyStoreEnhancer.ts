@@ -1,4 +1,4 @@
-import { type EnhancedStore, Reducer, combineReducers } from '@reduxjs/toolkit'
+import { type EnhancedStore, type Reducer, combineReducers } from '@reduxjs/toolkit'
 import { networkReducer } from '../store/network'
 import { transactionsReducer } from '../store/transactions'
 import { walletReducer } from '../store/wallet'
@@ -45,7 +45,7 @@ function createLazyStoreEnhancer(store: EnhancedStore, staticReducers: Record<st
         ...staticReducers,
         network: networkReducer,
         transactions: transactionsReducer,
-        wallet: walletReducer
+        wallet: walletReducer,
       })
     )
   }
