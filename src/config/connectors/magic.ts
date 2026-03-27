@@ -108,28 +108,26 @@ function magic(parameters: MagicParameters) {
       type: 'magic',
 
       async setup() {
-        // Check if user is already logged in via Magic
-        // Magic stores sessions in its own domain (auth.magic.link) via iframe,
-        // so we can detect sessions even when the user logged in from a different
-        // subdomain (e.g., auth.decentraland.org)
+        // Only initialize Magic if the user has a saved session from a previous login.
+        // Without a savedChainId there is no prior Magic session to reconnect — skip
+        // loading magic-sdk entirely so the auth.magic.link iframe is never injected
+        // for users who have never used Magic, avoiding ~400ms of eager network cost.
         const savedChainId = await config.storage?.getItem('magicChainId')
-        const chainId = savedChainId ?? config.chains[0]?.id
+        if (!savedChainId) return
 
-        if (chainId) {
-          try {
-            magicInstance = await getMagicInstance(chainId)
-            const isLoggedIn = await magicInstance.user.isLoggedIn()
+        try {
+          magicInstance = await getMagicInstance(savedChainId)
+          const isLoggedIn = await magicInstance.user.isLoggedIn()
 
-            if (isLoggedIn) {
-              const connection = await initializeConnection(chainId)
+          if (isLoggedIn) {
+            const connection = await initializeConnection(savedChainId)
 
-              if (connection) {
-                config.emitter.emit('connect', connection)
-              }
+            if (connection) {
+              config.emitter.emit('connect', connection)
             }
-          } catch {
-            // User not logged in or Magic not available
           }
+        } catch {
+          // User not logged in or Magic not available
         }
       },
 
@@ -187,18 +185,10 @@ function magic(parameters: MagicParameters) {
         // has an active session. For Magic, we check if the user is logged in.
         try {
           if (!magicInstance) {
-            // Try saved chain first, otherwise use default chain
-            // This is important for cross-domain sessions: Magic stores sessions
-            // in its own domain (auth.magic.link) via iframe, so we can check
-            // if user is logged in even without a saved chainId
             const savedChainId = await config.storage?.getItem('magicChainId')
-            const chainId = savedChainId ?? config.chains[0]?.id
+            if (!savedChainId) return false
 
-            if (!chainId) {
-              return false
-            }
-
-            magicInstance = await getMagicInstance(chainId)
+            magicInstance = await getMagicInstance(savedChainId)
           }
 
           return await magicInstance.user.isLoggedIn()
