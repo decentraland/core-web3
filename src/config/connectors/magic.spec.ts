@@ -20,16 +20,19 @@ function buildConnectorObject() {
     name: '',
     type: '',
     setup: async () => {},
-    connect: async (_opts?: { chainId?: number }) => ({ accounts: [] as readonly `0x${string}`[], chainId: 0 }),
+    connect: async (_opts?: { chainId?: number }) => ({
+      accounts: [] as readonly `0x${string}`[],
+      chainId: 0,
+    }),
     disconnect: async () => {},
     getAccounts: async () => [] as readonly `0x${string}`[],
     getChainId: async () => 0,
-    getProvider: async () => ({} as EIP1193Provider),
+    getProvider: async () => ({}) as EIP1193Provider,
     isAuthorized: async () => false,
-    switchChain: async (_opts: { chainId: number }) => ({} as never),
+    switchChain: async (_opts: { chainId: number }) => ({}) as never,
     onAccountsChanged: (_accounts: string[]) => {},
     onChainChanged: (_chain: string) => {},
-    onDisconnect: () => {}
+    onDisconnect: () => {},
   }
 }
 
@@ -41,18 +44,18 @@ const mockMagicConstructor = jest.fn()
 const mockOAuthExtension = jest.fn()
 
 jest.mock('magic-sdk', () => ({
-  Magic: mockMagicConstructor
+  Magic: mockMagicConstructor,
 }))
 
 jest.mock('@magic-ext/oauth2', () => ({
-  OAuthExtension: mockOAuthExtension
+  OAuthExtension: mockOAuthExtension,
 }))
 
 jest.mock('wagmi', () => ({
   createConnector: (factory: (config: MockConfig) => ReturnType<typeof buildConnectorObject>) => {
     connectorFactory = factory
     return factory
-  }
+  },
 }))
 
 import { magic } from './magic'
@@ -64,18 +67,18 @@ describe('magic connector', () => {
 
   beforeEach(() => {
     mockProvider = {
-      request: jest.fn()
+      request: jest.fn(),
     }
 
     mockMagicConstructor.mockReturnValue({
       user: {
         isLoggedIn: mockIsLoggedIn,
         logout: mockLogout,
-        getInfo: mockGetInfo
+        getInfo: mockGetInfo,
       },
       wallet: {
-        getProvider: mockGetProvider
-      }
+        getProvider: mockGetProvider,
+      },
     })
 
     mockGetProvider.mockResolvedValue(mockProvider)
@@ -86,11 +89,11 @@ describe('magic connector', () => {
       storage: {
         getItem: jest.fn(),
         setItem: jest.fn(),
-        removeItem: jest.fn()
+        removeItem: jest.fn(),
       },
       emitter: {
-        emit: jest.fn()
-      }
+        emit: jest.fn(),
+      },
     }
 
     magic({ apiKey: 'pk_test_123' })
@@ -98,7 +101,7 @@ describe('magic connector', () => {
   })
 
   afterEach(() => {
-    jest.clearAllMocks()
+    jest.resetAllMocks()
   })
 
   it('should have the correct id', () => {
@@ -114,11 +117,22 @@ describe('magic connector', () => {
   })
 
   describe('when calling setup', () => {
+    describe('when there is no saved chainId', () => {
+      beforeEach(async () => {
+        config.storage.getItem.mockResolvedValueOnce(null)
+        await connector.setup()
+      })
+
+      it('should not emit any event', () => {
+        expect(config.emitter.emit).not.toHaveBeenCalled()
+      })
+    })
+
     describe('when the user is logged in', () => {
       beforeEach(async () => {
+        config.storage.getItem.mockResolvedValueOnce(1)
         mockIsLoggedIn.mockResolvedValueOnce(true)
         mockProvider.request.mockResolvedValueOnce(['0x1234567890abcdef1234567890abcdef12345678'])
-        config.storage.getItem.mockResolvedValueOnce(null)
         await connector.setup()
       })
 
@@ -132,8 +146,8 @@ describe('magic connector', () => {
 
     describe('when the user is not logged in', () => {
       beforeEach(async () => {
+        config.storage.getItem.mockResolvedValueOnce(1)
         mockIsLoggedIn.mockResolvedValueOnce(false)
-        config.storage.getItem.mockResolvedValueOnce(null)
         await connector.setup()
       })
 
@@ -160,7 +174,7 @@ describe('magic connector', () => {
 
     describe('when Magic initialization fails', () => {
       beforeEach(async () => {
-        config.storage.getItem.mockResolvedValueOnce(null)
+        config.storage.getItem.mockResolvedValueOnce(1)
         mockMagicConstructor.mockImplementationOnce(() => {
           throw new Error('Magic not available')
         })
@@ -174,7 +188,7 @@ describe('magic connector', () => {
 
     describe('when accounts are empty', () => {
       beforeEach(async () => {
-        config.storage.getItem.mockResolvedValueOnce(null)
+        config.storage.getItem.mockResolvedValueOnce(1)
         mockIsLoggedIn.mockResolvedValueOnce(true)
         mockProvider.request.mockResolvedValueOnce([])
         await connector.setup()
@@ -376,7 +390,7 @@ describe('magic connector', () => {
       beforeEach(async () => {
         const noChainConfig: MockConfig = {
           ...config,
-          chains: []
+          chains: [],
         }
         magic({ apiKey: 'pk_test_123' })
         const noChainConnector = connectorFactory(noChainConfig)
@@ -399,10 +413,20 @@ describe('magic connector', () => {
         mockProvider.request.mockResolvedValueOnce(['0xabc123'])
         await connector.connect()
         jest.clearAllMocks()
+        mockMagicConstructor.mockReturnValue({
+          user: {
+            isLoggedIn: mockIsLoggedIn,
+            logout: mockLogout,
+            getInfo: mockGetInfo,
+          },
+          wallet: {
+            getProvider: mockGetProvider,
+          },
+        })
         mockIsLoggedIn.mockResolvedValueOnce(true)
         mockGetProvider.mockResolvedValueOnce(mockProvider)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        result = await connector.switchChain({ chainId: 137 }) as any
+        result = (await connector.switchChain({ chainId: 137 })) as any
       })
 
       it('should return the chain config', () => {
@@ -420,7 +444,9 @@ describe('magic connector', () => {
 
     describe('when the chain is not configured', () => {
       it('should throw an error', async () => {
-        await expect(connector.switchChain({ chainId: 999 })).rejects.toThrow('Chain 999 not configured')
+        await expect(connector.switchChain({ chainId: 999 })).rejects.toThrow(
+          'Chain 999 not configured'
+        )
       })
     })
 
@@ -433,7 +459,9 @@ describe('magic connector', () => {
       it('should throw an error', async () => {
         await connector.connect()
         mockIsLoggedIn.mockResolvedValueOnce(false)
-        await expect(connector.switchChain({ chainId: 137 })).rejects.toThrow('Magic: User is not logged in')
+        await expect(connector.switchChain({ chainId: 137 })).rejects.toThrow(
+          'Magic: User is not logged in'
+        )
       })
     })
   })
@@ -456,7 +484,7 @@ describe('magic connector', () => {
 
       it('should emit a change event with the accounts', () => {
         expect(config.emitter.emit).toHaveBeenCalledWith('change', {
-          accounts: ['0xabc123']
+          accounts: ['0xabc123'],
         })
       })
     })
