@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { useSelector } from 'react-redux'
 import { useConnect, useDisconnect } from 'wagmi'
+import { clearConnectionStorage } from '../config/wagmi'
 import { getAddress, getIsConnected, getIsConnecting, getIsDisconnecting, getWalletError } from '../store/wallet/selectors'
 
 /**
@@ -52,6 +53,7 @@ function useWallet() {
 
   const disconnect = useCallback(() => {
     wagmiDisconnect()
+    clearConnectionStorage()
   }, [wagmiDisconnect])
 
   return {

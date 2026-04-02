@@ -12,7 +12,7 @@ jest.mock('wagmi/connectors', () => ({
   coinbaseWallet: jest.fn().mockReturnValue({ id: 'coinbaseWallet' })
 }))
 
-import { clearWagmiState, createWeb3CoreConfig } from './wagmi'
+import { clearConnectionStorage, clearWagmiState, createWeb3CoreConfig } from './wagmi'
 import { createConfig, http } from 'wagmi'
 import { injected, walletConnect, coinbaseWallet } from 'wagmi/connectors'
 
@@ -321,6 +321,57 @@ describe('wagmi', () => {
 
       it('should not throw', () => {
         expect(() => clearWagmiState()).not.toThrow()
+      })
+    })
+  })
+
+  describe('when calling clearConnectionStorage', () => {
+    describe('when localStorage has connection keys', () => {
+      let originalLocalStorage: Storage
+
+      beforeEach(() => {
+        originalLocalStorage = window.localStorage
+        Object.defineProperty(window, 'localStorage', {
+          value: {
+            ...originalLocalStorage,
+            removeItem: jest.fn()
+          },
+          writable: true,
+          configurable: true
+        })
+
+        clearConnectionStorage()
+      })
+
+      afterEach(() => {
+        Object.defineProperty(window, 'localStorage', {
+          value: originalLocalStorage,
+          writable: true,
+          configurable: true
+        })
+      })
+
+      it('should remove the decentraland-connect storage key', () => {
+        expect(window.localStorage.removeItem).toHaveBeenCalledWith('decentraland-connect-storage-key')
+      })
+    })
+
+    describe('when window is undefined', () => {
+      let originalWindow: typeof globalThis.window
+
+      beforeEach(() => {
+        originalWindow = globalThis.window
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(globalThis as any).window = undefined
+      })
+
+      afterEach(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(globalThis as any).window = originalWindow
+      })
+
+      it('should not throw', () => {
+        expect(() => clearConnectionStorage()).not.toThrow()
       })
     })
   })

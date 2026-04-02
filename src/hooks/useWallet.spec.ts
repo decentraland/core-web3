@@ -24,6 +24,11 @@ jest.mock('wagmi', () => ({
   })
 }))
 
+jest.mock('../config/wagmi', () => ({
+  clearConnectionStorage: jest.fn()
+}))
+
+import { clearConnectionStorage } from '../config/wagmi'
 import { useWallet } from './useWallet'
 
 describe('useWallet', () => {
@@ -105,6 +110,12 @@ describe('useWallet', () => {
       const { result } = renderHook(() => useWallet())
       result.current.disconnect()
       expect(mockWagmiDisconnect).toHaveBeenCalledTimes(1)
+    })
+
+    it('should clear connection storage', () => {
+      const { result } = renderHook(() => useWallet())
+      result.current.disconnect()
+      expect(clearConnectionStorage).toHaveBeenCalledTimes(1)
     })
   })
 
