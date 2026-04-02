@@ -112,7 +112,12 @@ function magic(parameters: MagicParameters) {
         // a successful Magic OAuth login and removes it on disconnect.
         // We use this as a lightweight signal to avoid loading magic-sdk
         // (~400ms iframe cost) for users who have never used Magic.
-        const hasMagicSession = !!localStorage.getItem('dcl_magic_user_email')
+        let hasMagicSession = false
+        try {
+          hasMagicSession = !!localStorage.getItem('dcl_magic_user_email')
+        } catch {
+          // localStorage not available (SSR, sandboxed iframes, privacy-restricted browsers)
+        }
         const savedChainId = await config.storage?.getItem('magicChainId')
         const chainId = savedChainId ?? config.chains[0]?.id
         if (!chainId || (!savedChainId && !hasMagicSession)) return
