@@ -108,19 +108,21 @@ function magic(parameters: MagicParameters) {
       type: 'magic',
 
       async setup() {
-        // Only initialize Magic if the user has a saved session from a previous login.
-        // Without a savedChainId there is no prior Magic session to reconnect — skip
-        // loading magic-sdk entirely so the auth.magic.link iframe is never injected
-        // for users who have never used Magic, avoiding ~400ms of eager network cost.
+        // The auth dapp stores dcl_magic_user_email in localStorage after
+        // a successful Magic OAuth login and removes it on disconnect.
+        // We use this as a lightweight signal to avoid loading magic-sdk
+        // (~400ms iframe cost) for users who have never used Magic.
+        const hasMagicSession = !!localStorage.getItem('dcl_magic_user_email')
         const savedChainId = await config.storage?.getItem('magicChainId')
-        if (!savedChainId) return
+        const chainId = savedChainId ?? config.chains[0]?.id
+        if (!chainId || (!savedChainId && !hasMagicSession)) return
 
         try {
-          magicInstance = await getMagicInstance(savedChainId)
+          magicInstance = await getMagicInstance(chainId)
           const isLoggedIn = await magicInstance.user.isLoggedIn()
 
           if (isLoggedIn) {
-            const connection = await initializeConnection(savedChainId)
+            const connection = await initializeConnection(chainId)
 
             if (connection) {
               config.emitter.emit('connect', connection)
