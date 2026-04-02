@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import { useSelector } from 'react-redux'
+import { localStorageClearIdentity } from '@dcl/single-sign-on-client'
 import { useConnect, useDisconnect } from 'wagmi'
 import { clearConnectionStorage } from '../config/wagmi'
 import { getAddress, getIsConnected, getIsConnecting, getIsDisconnecting, getWalletError } from '../store/wallet/selectors'
@@ -52,9 +53,12 @@ function useWallet() {
   )
 
   const disconnect = useCallback(() => {
+    if (address) {
+      localStorageClearIdentity(address)
+    }
     wagmiDisconnect()
     clearConnectionStorage()
-  }, [wagmiDisconnect])
+  }, [address, wagmiDisconnect])
 
   return {
     /** Current wallet address or null if not connected */
