@@ -282,5 +282,21 @@ function clearWagmiState(): void {
   keysToRemove.forEach(key => localStorage.removeItem(key))
 }
 
-export { createWeb3CoreConfig, clearWagmiState }
+/**
+ * Clears connection-related localStorage entries that were set by
+ * decentraland-connect, mirroring the cleanup performed by
+ * decentraland-connect's `ConnectionManager.disconnect()`.
+ *
+ * Keys removed:
+ * - `decentraland-connect-storage-key` – persisted provider type & chain
+ */
+function clearConnectionStorage(): void {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return
+  }
+
+  window.localStorage.removeItem('decentraland-connect-storage-key')
+}
+
+export { createWeb3CoreConfig, clearWagmiState, clearConnectionStorage }
 export type { Web3CoreConfig, Web3CoreConfigOptions }
