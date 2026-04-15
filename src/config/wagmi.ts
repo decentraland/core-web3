@@ -47,10 +47,9 @@ interface Web3CoreConfigOptions {
   magicApiKey?: string
 
   /**
-   * Decentraland environment used to select default API keys.
-   * Only used when `walletConnectProjectId` or `magicApiKey` are not
-   * explicitly provided.
-   * @default 'dev'
+   * Decentraland environment used to select the default Magic API key.
+   * Only used when `magicApiKey` is not explicitly provided.
+   * @default 'prd'
    */
   environment?: 'dev' | 'stg' | 'prd'
 
@@ -80,7 +79,7 @@ interface Web3CoreConfigOptions {
   connectors?: {
     /** Enable injected wallet connector (MetaMask, etc.) @default true */
     injected?: boolean
-    /** Enable WalletConnect connector (requires walletConnectProjectId) @default true */
+    /** Enable WalletConnect connector @default true */
     walletConnect?: boolean
     /** Enable Coinbase Wallet connector @default true */
     coinbaseWallet?: boolean
@@ -91,6 +90,9 @@ interface Web3CoreConfigOptions {
   /**
    * Additional custom connectors to include.
    * Use this to add connectors beyond the built-in ones.
+   *
+   * **Note:** Magic is now built-in (controlled via `connectors.magic`).
+   * If you were passing `magic()` here, remove it to avoid double-registration.
    */
   additionalConnectors?: CreateConnectorFn[]
 }
@@ -206,13 +208,19 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
   const {
     walletConnectProjectId = DEFAULT_WALLET_CONNECT_PROJECT_ID,
     magicApiKey,
-    environment = 'dev',
+    environment = 'prd',
     appMetadata: appMetadataOverrides,
     chains = supportedChains,
     transports: customTransports,
     connectors: connectorOptions = {},
     additionalConnectors = [],
   } = options
+
+  if (!(environment in DEFAULT_MAGIC_API_KEYS)) {
+    throw new Error(
+      `Invalid environment "${environment}". Expected one of: ${Object.keys(DEFAULT_MAGIC_API_KEYS).join(', ')}`
+    )
+  }
 
   const appMetadata = resolveAppMetadata(appMetadataOverrides)
 
@@ -237,7 +245,7 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
     connectors.push(injected())
   }
 
-  if (enableWalletConnect && walletConnectProjectId) {
+  if (enableWalletConnect) {
     connectors.push(
       walletConnect({
         projectId: walletConnectProjectId,

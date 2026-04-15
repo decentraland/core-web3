@@ -63,9 +63,9 @@ describe('wagmi', () => {
         )
       })
 
-      it('should enable the magic connector with the default dev key', () => {
+      it('should enable the magic connector with the default prd key', () => {
         expect(mockedMagic).toHaveBeenCalledTimes(1)
-        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: DEFAULT_MAGIC_API_KEYS.dev })
+        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: DEFAULT_MAGIC_API_KEYS.prd })
       })
     })
 
@@ -113,6 +113,15 @@ describe('wagmi', () => {
 
       it('should use the staging magic key', () => {
         expect(mockedMagic).toHaveBeenCalledWith({ apiKey: DEFAULT_MAGIC_API_KEYS.stg })
+      })
+    })
+
+    describe('when an invalid environment is provided', () => {
+      it('should throw an error', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expect(() => createWeb3CoreConfig({ environment: 'production' as any })).toThrow(
+          'Invalid environment "production"'
+        )
       })
     })
 
