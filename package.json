@@ -36,7 +36,7 @@
   },
   "peerDependencies": {
     "@dcl/crypto": "^3.4.5",
-    "@dcl/schemas": "^25.2.0",
+    "@dcl/schemas": "^26.1.0",
     "@dcl/single-sign-on-client": "^0.1.0",
     "@reduxjs/toolkit": "^2.5.0",
     "@tanstack/react-query": "^5.62.0",
@@ -62,7 +62,7 @@
   "devDependencies": {
     "@dcl/crypto": "^3.4.5",
     "@dcl/eslint-config": "^3.0.0",
-    "@dcl/schemas": "^25.2.0",
+    "@dcl/schemas": "^26.1.0",
     "@dcl/single-sign-on-client": "^0.1.0",
     "@magic-ext/oauth2": "14.0.0",
     "@reduxjs/toolkit": "2.5.0",
