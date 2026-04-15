@@ -24,10 +24,15 @@ jest.mock('wagmi', () => ({
   })
 }))
 
+jest.mock('@dcl/single-sign-on-client', () => ({
+  localStorageClearIdentity: jest.fn()
+}))
+
 jest.mock('../config/wagmi', () => ({
   clearConnectionStorage: jest.fn()
 }))
 
+import { localStorageClearIdentity } from '@dcl/single-sign-on-client'
 import { clearConnectionStorage } from '../config/wagmi'
 import { useWallet } from './useWallet'
 
@@ -102,20 +107,50 @@ describe('useWallet', () => {
   })
 
   describe('when disconnect is called', () => {
-    beforeEach(() => {
-      mockUseSelector.mockReturnValue(null)
+    describe('and the wallet has an address', () => {
+      beforeEach(() => {
+        mockUseSelector.mockImplementation((selector: Function) => {
+          const selectorStr = selector.toString()
+          if (selectorStr.includes('address') || selectorStr.includes('Address')) return '0xabc123'
+          return null
+        })
+      })
+
+      it('should call wagmiDisconnect', () => {
+        const { result } = renderHook(() => useWallet())
+        result.current.disconnect()
+        expect(mockWagmiDisconnect).toHaveBeenCalledTimes(1)
+      })
+
+      it('should clear connection storage', () => {
+        const { result } = renderHook(() => useWallet())
+        result.current.disconnect()
+        expect(clearConnectionStorage).toHaveBeenCalledTimes(1)
+      })
+
+      it('should clear the identity for the connected address', () => {
+        const { result } = renderHook(() => useWallet())
+        result.current.disconnect()
+        expect(localStorageClearIdentity).toHaveBeenCalledWith('0xabc123')
+      })
     })
 
-    it('should call wagmiDisconnect', () => {
-      const { result } = renderHook(() => useWallet())
-      result.current.disconnect()
-      expect(mockWagmiDisconnect).toHaveBeenCalledTimes(1)
-    })
+    describe('and the wallet does not have an address', () => {
+      beforeEach(() => {
+        mockUseSelector.mockReturnValue(null)
+      })
 
-    it('should clear connection storage', () => {
-      const { result } = renderHook(() => useWallet())
-      result.current.disconnect()
-      expect(clearConnectionStorage).toHaveBeenCalledTimes(1)
+      it('should call wagmiDisconnect', () => {
+        const { result } = renderHook(() => useWallet())
+        result.current.disconnect()
+        expect(mockWagmiDisconnect).toHaveBeenCalledTimes(1)
+      })
+
+      it('should not clear the identity', () => {
+        const { result } = renderHook(() => useWallet())
+        result.current.disconnect()
+        expect(localStorageClearIdentity).not.toHaveBeenCalled()
+      })
     })
   })
 
