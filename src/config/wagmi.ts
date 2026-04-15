@@ -99,25 +99,26 @@ const defaultAppMetadata: AppMetadata = {
   name: 'Decentraland',
   description: 'Decentraland dApp',
   url: 'https://decentraland.org',
-  icons: ['https://cdn.decentraland.org/@dcl/marketplace-site/6.41.1/favicon.ico'],
+  icons: ['https://cdn.decentraland.org/@dcl/marketplace-site/6.41.1/favicon.ico']
 }
 
 // Publishable client-side keys — not secrets
 const DEFAULT_WALLET_CONNECT_PROJECT_ID = '61570c542c2d66c659492e5b24a41522'
 
-// dev and stg share the same Magic application
+// dev uses the test Magic application; stg and prd share the production one
 const NON_PRD_MAGIC_KEY = 'pk_live_CE856A4938B36648'
+const PRD_MAGIC_KEY = 'pk_live_212568025B158355'
 const DEFAULT_MAGIC_API_KEYS: Record<NonNullable<Web3CoreConfigOptions['environment']>, string> = {
   dev: NON_PRD_MAGIC_KEY,
-  stg: NON_PRD_MAGIC_KEY,
-  prd: 'pk_live_212568025B158355',
+  stg: PRD_MAGIC_KEY,
+  prd: PRD_MAGIC_KEY,
 }
 
 const DEFAULT_RPC_URLS: Record<number, string> = {
   [ChainId.ETHEREUM_MAINNET]: 'https://rpc.decentraland.org/mainnet',
   [ChainId.ETHEREUM_SEPOLIA]: 'https://rpc.decentraland.org/sepolia',
   [ChainId.MATIC_MAINNET]: 'https://rpc.decentraland.org/polygon',
-  [ChainId.MATIC_AMOY]: 'https://rpc.decentraland.org/amoy',
+  [ChainId.MATIC_AMOY]: 'https://rpc.decentraland.org/amoy'
 }
 
 const defaultTransports = supportedChains.reduce(
@@ -147,17 +148,13 @@ function resolveAppMetadata(overrides?: AppMetadataInput): AppMetadata {
     return defaultAppMetadata
   }
 
-  const resolvedUrl =
-    overrides.url ??
-    (overrides.urlPath
-      ? buildAppUrl(defaultAppMetadata.url, overrides.urlPath)
-      : defaultAppMetadata.url)
+  const resolvedUrl = overrides.url ?? (overrides.urlPath ? buildAppUrl(defaultAppMetadata.url, overrides.urlPath) : defaultAppMetadata.url)
 
   return {
     name: overrides.name ?? defaultAppMetadata.name,
     description: overrides.description ?? defaultAppMetadata.description,
     url: resolvedUrl,
-    icons: overrides.icons ?? defaultAppMetadata.icons,
+    icons: overrides.icons ?? defaultAppMetadata.icons
   }
 }
 
@@ -206,13 +203,11 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
     chains = supportedChains,
     transports: customTransports,
     connectors: connectorOptions = {},
-    additionalConnectors = [],
+    additionalConnectors = []
   } = options
 
   if (!Object.prototype.hasOwnProperty.call(DEFAULT_MAGIC_API_KEYS, environment)) {
-    throw new Error(
-      `Invalid environment "${environment}". Expected one of: ${Object.keys(DEFAULT_MAGIC_API_KEYS).join(', ')}`
-    )
+    throw new Error(`Invalid environment "${environment}". Expected one of: ${Object.keys(DEFAULT_MAGIC_API_KEYS).join(', ')}`)
   }
 
   const appMetadata = resolveAppMetadata(appMetadataOverrides)
@@ -221,7 +216,7 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
     injected: enableInjected = true,
     walletConnect: enableWalletConnect = true,
     coinbaseWallet: enableCoinbaseWallet = true,
-    magic: magicOption = true,
+    magic: magicOption = true
   } = connectorOptions
 
   const transports = chains.reduce(
@@ -246,8 +241,8 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
           name: appMetadata.name,
           description: appMetadata.description ?? '',
           url: appMetadata.url,
-          icons: appMetadata.icons ?? [],
-        },
+          icons: appMetadata.icons ?? []
+        }
       })
     )
   }
@@ -255,14 +250,13 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
   if (enableCoinbaseWallet) {
     connectors.push(
       coinbaseWallet({
-        appName: appMetadata.name,
+        appName: appMetadata.name
       })
     )
   }
 
   if (magicOption !== false) {
-    const resolvedMagicKey =
-      typeof magicOption === 'object' ? magicOption.apiKey : DEFAULT_MAGIC_API_KEYS[environment]
+    const resolvedMagicKey = typeof magicOption === 'object' ? magicOption.apiKey : DEFAULT_MAGIC_API_KEYS[environment]
     connectors.push(magic({ apiKey: resolvedMagicKey }))
   }
 
@@ -271,7 +265,7 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
   return createConfig({
     chains,
     transports,
-    connectors,
+    connectors
   })
 }
 
@@ -307,7 +301,7 @@ function clearWagmiState(): void {
     }
   }
 
-  keysToRemove.forEach((key) => localStorage.removeItem(key))
+  keysToRemove.forEach(key => localStorage.removeItem(key))
 }
 
 /**

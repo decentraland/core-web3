@@ -105,8 +105,8 @@ describe('wagmi', () => {
         createWeb3CoreConfig({ environment: 'stg' })
       })
 
-      it('should use the staging magic key', () => {
-        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: 'pk_live_CE856A4938B36648' })
+      it('should use the production magic key', () => {
+        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: 'pk_live_212568025B158355' })
       })
     })
 
