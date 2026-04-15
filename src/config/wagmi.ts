@@ -13,11 +13,11 @@ type AppMetadata = {
   /** Application name displayed in wallet connection prompts */
   name: string
   /** Application description */
-  description?: string
+  description: string
   /** Application URL */
   url: string
   /** Application icons (URLs) */
-  icons?: string[]
+  icons: string[]
 }
 
 type AppMetadataInput = {
@@ -41,11 +41,10 @@ interface Web3CoreConfigOptions {
   walletConnectProjectId?: string
 
   /**
-   * Magic API key for social login connector.
-   * When provided, the Magic connector is automatically added.
+   * Magic API key override for social login connector.
    * @default Decentraland shared key based on `environment`
    */
-  magicApiKey?: string | false
+  magicApiKey?: string
 
   /**
    * Decentraland environment used to select default API keys.
@@ -109,7 +108,8 @@ const defaultAppMetadata: AppMetadata = {
 
 const DEFAULT_WALLET_CONNECT_PROJECT_ID = '61570c542c2d66c659492e5b24a41522'
 
-const DEFAULT_MAGIC_API_KEYS: Record<string, string> = {
+// dev and stg share the same Magic application
+const DEFAULT_MAGIC_API_KEYS: Record<NonNullable<Web3CoreConfigOptions['environment']>, string> = {
   dev: 'pk_live_CE856A4938B36648',
   stg: 'pk_live_CE856A4938B36648',
   prd: 'pk_live_212568025B158355',
@@ -243,9 +243,9 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
         projectId: walletConnectProjectId,
         metadata: {
           name: appMetadata.name,
-          description: appMetadata.description ?? '',
-          url: appMetadata.url ?? '',
-          icons: appMetadata.icons ?? [],
+          description: appMetadata.description,
+          url: appMetadata.url,
+          icons: appMetadata.icons,
         },
       })
     )
@@ -259,9 +259,8 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
     )
   }
 
-  const resolvedMagicKey =
-    magicApiKey === false ? undefined : (magicApiKey ?? DEFAULT_MAGIC_API_KEYS[environment])
-  if (enableMagic && resolvedMagicKey) {
+  if (enableMagic) {
+    const resolvedMagicKey = magicApiKey ?? DEFAULT_MAGIC_API_KEYS[environment]
     connectors.push(magic({ apiKey: resolvedMagicKey }))
   }
 
@@ -325,5 +324,11 @@ function clearConnectionStorage(): void {
   window.localStorage.removeItem('decentraland-connect-storage-key')
 }
 
-export { createWeb3CoreConfig, clearWagmiState, clearConnectionStorage }
+export {
+  createWeb3CoreConfig,
+  clearWagmiState,
+  clearConnectionStorage,
+  DEFAULT_WALLET_CONNECT_PROJECT_ID,
+  DEFAULT_MAGIC_API_KEYS,
+}
 export type { Web3CoreConfig, Web3CoreConfigOptions }

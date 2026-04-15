@@ -15,7 +15,13 @@ jest.mock('./connectors/magic', () => ({
   magic: jest.fn().mockReturnValue({ id: 'magic' }),
 }))
 
-import { clearConnectionStorage, clearWagmiState, createWeb3CoreConfig } from './wagmi'
+import {
+  clearConnectionStorage,
+  clearWagmiState,
+  createWeb3CoreConfig,
+  DEFAULT_WALLET_CONNECT_PROJECT_ID,
+  DEFAULT_MAGIC_API_KEYS,
+} from './wagmi'
 import { createConfig, http } from 'wagmi'
 import { injected, walletConnect, coinbaseWallet } from 'wagmi/connectors'
 import { magic } from './connectors/magic'
@@ -53,13 +59,13 @@ describe('wagmi', () => {
       it('should enable walletConnect with the default project ID', () => {
         expect(mockedWalletConnect).toHaveBeenCalledTimes(1)
         expect(mockedWalletConnect).toHaveBeenCalledWith(
-          expect.objectContaining({ projectId: '61570c542c2d66c659492e5b24a41522' })
+          expect.objectContaining({ projectId: DEFAULT_WALLET_CONNECT_PROJECT_ID })
         )
       })
 
       it('should enable the magic connector with the default dev key', () => {
         expect(mockedMagic).toHaveBeenCalledTimes(1)
-        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: 'pk_live_CE856A4938B36648' })
+        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: DEFAULT_MAGIC_API_KEYS.dev })
       })
     })
 
@@ -86,17 +92,27 @@ describe('wagmi', () => {
       })
 
       it('should use the production magic key', () => {
-        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: 'pk_live_212568025B158355' })
+        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: DEFAULT_MAGIC_API_KEYS.prd })
       })
     })
 
-    describe('when magicApiKey is explicitly false', () => {
+    describe('when a custom magicApiKey is provided', () => {
       beforeEach(() => {
-        createWeb3CoreConfig({ magicApiKey: false })
+        createWeb3CoreConfig({ magicApiKey: 'pk_live_CUSTOM_KEY' })
       })
 
-      it('should not enable the magic connector', () => {
-        expect(mockedMagic).not.toHaveBeenCalled()
+      it('should use the custom magic key', () => {
+        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: 'pk_live_CUSTOM_KEY' })
+      })
+    })
+
+    describe('when environment is stg', () => {
+      beforeEach(() => {
+        createWeb3CoreConfig({ environment: 'stg' })
+      })
+
+      it('should use the staging magic key', () => {
+        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: DEFAULT_MAGIC_API_KEYS.stg })
       })
     })
 
@@ -382,10 +398,10 @@ describe('wagmi', () => {
         Object.defineProperty(window, 'localStorage', {
           value: {
             ...originalLocalStorage,
-            removeItem: jest.fn()
+            removeItem: jest.fn(),
           },
           writable: true,
-          configurable: true
+          configurable: true,
         })
 
         clearConnectionStorage()
@@ -395,12 +411,14 @@ describe('wagmi', () => {
         Object.defineProperty(window, 'localStorage', {
           value: originalLocalStorage,
           writable: true,
-          configurable: true
+          configurable: true,
         })
       })
 
       it('should remove the decentraland-connect storage key', () => {
-        expect(window.localStorage.removeItem).toHaveBeenCalledWith('decentraland-connect-storage-key')
+        expect(window.localStorage.removeItem).toHaveBeenCalledWith(
+          'decentraland-connect-storage-key'
+        )
       })
     })
 
