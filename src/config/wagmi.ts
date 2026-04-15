@@ -13,11 +13,11 @@ type AppMetadata = {
   /** Application name displayed in wallet connection prompts */
   name: string
   /** Application description */
-  description: string
+  description?: string
   /** Application URL */
   url: string
   /** Application icons (URLs) */
-  icons: string[]
+  icons?: string[]
 }
 
 type AppMetadataInput = {
@@ -41,14 +41,8 @@ interface Web3CoreConfigOptions {
   walletConnectProjectId?: string
 
   /**
-   * Magic API key override for social login connector.
-   * @default Decentraland shared key based on `environment`
-   */
-  magicApiKey?: string
-
-  /**
    * Decentraland environment used to select the default Magic API key.
-   * Only used when `magicApiKey` is not explicitly provided.
+   * Only used when `connectors.magic` does not provide an explicit `apiKey`.
    * @default 'prd'
    */
   environment?: 'dev' | 'stg' | 'prd'
@@ -83,8 +77,8 @@ interface Web3CoreConfigOptions {
     walletConnect?: boolean
     /** Enable Coinbase Wallet connector @default true */
     coinbaseWallet?: boolean
-    /** Enable Magic connector for social login @default true */
-    magic?: boolean
+    /** Enable Magic connector for social login. Pass `{ apiKey }` to override the default key. @default true */
+    magic?: boolean | { apiKey: string }
   }
 
   /**
@@ -108,12 +102,14 @@ const defaultAppMetadata: AppMetadata = {
   icons: ['https://cdn.decentraland.org/@dcl/marketplace-site/6.41.1/favicon.ico'],
 }
 
+// Publishable client-side keys — not secrets
 const DEFAULT_WALLET_CONNECT_PROJECT_ID = '61570c542c2d66c659492e5b24a41522'
 
 // dev and stg share the same Magic application
+const NON_PRD_MAGIC_KEY = 'pk_live_CE856A4938B36648'
 const DEFAULT_MAGIC_API_KEYS: Record<NonNullable<Web3CoreConfigOptions['environment']>, string> = {
-  dev: 'pk_live_CE856A4938B36648',
-  stg: 'pk_live_CE856A4938B36648',
+  dev: NON_PRD_MAGIC_KEY,
+  stg: NON_PRD_MAGIC_KEY,
   prd: 'pk_live_212568025B158355',
 }
 
@@ -207,7 +203,6 @@ function resolveAppMetadata(overrides?: AppMetadataInput): AppMetadata {
 function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
   const {
     walletConnectProjectId = DEFAULT_WALLET_CONNECT_PROJECT_ID,
-    magicApiKey,
     environment = 'prd',
     appMetadata: appMetadataOverrides,
     chains = supportedChains,
@@ -228,7 +223,7 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
     injected: enableInjected = true,
     walletConnect: enableWalletConnect = true,
     coinbaseWallet: enableCoinbaseWallet = true,
-    magic: enableMagic = true,
+    magic: magicOption = true,
   } = connectorOptions
 
   const transports = chains.reduce(
@@ -251,9 +246,9 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
         projectId: walletConnectProjectId,
         metadata: {
           name: appMetadata.name,
-          description: appMetadata.description,
+          description: appMetadata.description ?? '',
           url: appMetadata.url,
-          icons: appMetadata.icons,
+          icons: appMetadata.icons ?? [],
         },
       })
     )
@@ -267,8 +262,9 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
     )
   }
 
-  if (enableMagic) {
-    const resolvedMagicKey = magicApiKey ?? DEFAULT_MAGIC_API_KEYS[environment]
+  if (magicOption !== false) {
+    const resolvedMagicKey =
+      typeof magicOption === 'object' ? magicOption.apiKey : DEFAULT_MAGIC_API_KEYS[environment]
     connectors.push(magic({ apiKey: resolvedMagicKey }))
   }
 
@@ -332,11 +328,5 @@ function clearConnectionStorage(): void {
   window.localStorage.removeItem('decentraland-connect-storage-key')
 }
 
-export {
-  createWeb3CoreConfig,
-  clearWagmiState,
-  clearConnectionStorage,
-  DEFAULT_WALLET_CONNECT_PROJECT_ID,
-  DEFAULT_MAGIC_API_KEYS,
-}
+export { createWeb3CoreConfig, clearWagmiState, clearConnectionStorage }
 export type { Web3CoreConfig, Web3CoreConfigOptions }

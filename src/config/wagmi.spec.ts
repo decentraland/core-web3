@@ -15,13 +15,7 @@ jest.mock('./connectors/magic', () => ({
   magic: jest.fn().mockReturnValue({ id: 'magic' }),
 }))
 
-import {
-  clearConnectionStorage,
-  clearWagmiState,
-  createWeb3CoreConfig,
-  DEFAULT_WALLET_CONNECT_PROJECT_ID,
-  DEFAULT_MAGIC_API_KEYS,
-} from './wagmi'
+import { clearConnectionStorage, clearWagmiState, createWeb3CoreConfig } from './wagmi'
 import { createConfig, http } from 'wagmi'
 import { injected, walletConnect, coinbaseWallet } from 'wagmi/connectors'
 import { magic } from './connectors/magic'
@@ -59,13 +53,13 @@ describe('wagmi', () => {
       it('should enable walletConnect with the default project ID', () => {
         expect(mockedWalletConnect).toHaveBeenCalledTimes(1)
         expect(mockedWalletConnect).toHaveBeenCalledWith(
-          expect.objectContaining({ projectId: DEFAULT_WALLET_CONNECT_PROJECT_ID })
+          expect.objectContaining({ projectId: '61570c542c2d66c659492e5b24a41522' })
         )
       })
 
       it('should enable the magic connector with the default prd key', () => {
         expect(mockedMagic).toHaveBeenCalledTimes(1)
-        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: DEFAULT_MAGIC_API_KEYS.prd })
+        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: 'pk_live_212568025B158355' })
       })
     })
 
@@ -92,13 +86,13 @@ describe('wagmi', () => {
       })
 
       it('should use the production magic key', () => {
-        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: DEFAULT_MAGIC_API_KEYS.prd })
+        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: 'pk_live_212568025B158355' })
       })
     })
 
-    describe('when a custom magicApiKey is provided', () => {
+    describe('when a custom magic apiKey is provided via connectors', () => {
       beforeEach(() => {
-        createWeb3CoreConfig({ magicApiKey: 'pk_live_CUSTOM_KEY' })
+        createWeb3CoreConfig({ connectors: { magic: { apiKey: 'pk_live_CUSTOM_KEY' } } })
       })
 
       it('should use the custom magic key', () => {
@@ -112,7 +106,17 @@ describe('wagmi', () => {
       })
 
       it('should use the staging magic key', () => {
-        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: DEFAULT_MAGIC_API_KEYS.stg })
+        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: 'pk_live_CE856A4938B36648' })
+      })
+    })
+
+    describe('when environment is dev', () => {
+      beforeEach(() => {
+        createWeb3CoreConfig({ environment: 'dev' })
+      })
+
+      it('should use the dev magic key', () => {
+        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: 'pk_live_CE856A4938B36648' })
       })
     })
 
@@ -132,6 +136,16 @@ describe('wagmi', () => {
 
       it('should not enable the magic connector', () => {
         expect(mockedMagic).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('when walletConnect is disabled via connectors option', () => {
+      beforeEach(() => {
+        createWeb3CoreConfig({ connectors: { walletConnect: false } })
+      })
+
+      it('should not enable the walletConnect connector', () => {
+        expect(mockedWalletConnect).not.toHaveBeenCalled()
       })
     })
 
