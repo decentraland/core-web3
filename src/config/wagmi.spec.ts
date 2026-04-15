@@ -129,6 +129,32 @@ describe('wagmi', () => {
       })
     })
 
+    describe('when magic is explicitly set to true', () => {
+      beforeEach(() => {
+        createWeb3CoreConfig({ connectors: { magic: true } })
+      })
+
+      it('should enable the magic connector with the default key', () => {
+        expect(mockedMagic).toHaveBeenCalledTimes(1)
+        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: 'pk_live_212568025B158355' })
+      })
+    })
+
+    describe('when magic is passed via additionalConnectors while built-in magic is enabled', () => {
+      let additionalMagic: jest.Mock
+
+      beforeEach(() => {
+        additionalMagic = jest.fn()
+        createWeb3CoreConfig({ additionalConnectors: [additionalMagic] })
+      })
+
+      it('should include both the built-in and additional connectors', () => {
+        const call = mockedCreateConfig.mock.calls[0][0]
+        expect(mockedMagic).toHaveBeenCalledTimes(1)
+        expect(call.connectors).toContain(additionalMagic)
+      })
+    })
+
     describe('when magic connector is disabled via connectors option', () => {
       beforeEach(() => {
         createWeb3CoreConfig({ connectors: { magic: false } })

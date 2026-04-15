@@ -164,10 +164,11 @@ function resolveAppMetadata(overrides?: AppMetadataInput): AppMetadata {
 /**
  * Creates a wagmi config instance pre-configured for Decentraland dApps.
  *
- * Supports the following wallet connectors:
+ * Supports the following wallet connectors (all enabled by default):
  * - **Injected**: MetaMask, Brave Wallet, and other browser extension wallets
- * - **WalletConnect**: Mobile wallets via QR code (requires project ID)
+ * - **WalletConnect**: Mobile wallets via QR code
  * - **Coinbase Wallet**: Coinbase Wallet app and extension
+ * - **Magic**: Social login (email, Google, Discord)
  *
  * @param options - Configuration options for the Web3 Core config.
  * @returns A wagmi config instance ready to use with wagmi hooks.
@@ -176,26 +177,23 @@ function resolveAppMetadata(overrides?: AppMetadataInput): AppMetadata {
  * ```ts
  * import { createWeb3CoreConfig } from '@dcl/core-web3'
  *
- * // Basic usage with defaults
+ * // Zero-config — all connectors enabled with Decentraland defaults
  * const config = createWeb3CoreConfig()
  *
- * // With WalletConnect enabled
+ * // With custom app metadata
  * const config = createWeb3CoreConfig({
- *   walletConnectProjectId: 'your-project-id',
  *   appMetadata: {
  *     name: 'My Decentraland App',
- *     description: 'An awesome dApp',
- *     url: 'https://myapp.com',
+ *     urlPath: '/marketplace',
  *   },
  * })
  *
- * // With custom chains and disabled connectors
+ * // With disabled connectors and custom Magic key
  * const config = createWeb3CoreConfig({
- *   chains: [mainnet, polygon],
  *   connectors: {
- *     injected: true,
  *     walletConnect: false,
  *     coinbaseWallet: false,
+ *     magic: { apiKey: 'pk_live_CUSTOM' },
  *   },
  * })
  * ```
@@ -211,7 +209,7 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
     additionalConnectors = [],
   } = options
 
-  if (!(environment in DEFAULT_MAGIC_API_KEYS)) {
+  if (!Object.prototype.hasOwnProperty.call(DEFAULT_MAGIC_API_KEYS, environment)) {
     throw new Error(
       `Invalid environment "${environment}". Expected one of: ${Object.keys(DEFAULT_MAGIC_API_KEYS).join(', ')}`
     )
