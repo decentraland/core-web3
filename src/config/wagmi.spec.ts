@@ -1,26 +1,31 @@
 import { ChainId } from '@dcl/schemas'
 
-
 jest.mock('wagmi', () => ({
   createConfig: jest.fn().mockReturnValue({ mock: 'config' }),
-  http: jest.fn().mockReturnValue('http-transport')
+  http: jest.fn().mockReturnValue('http-transport'),
 }))
 
 jest.mock('wagmi/connectors', () => ({
   injected: jest.fn().mockReturnValue({ id: 'injected' }),
   walletConnect: jest.fn().mockReturnValue({ id: 'walletConnect' }),
-  coinbaseWallet: jest.fn().mockReturnValue({ id: 'coinbaseWallet' })
+  coinbaseWallet: jest.fn().mockReturnValue({ id: 'coinbaseWallet' }),
+}))
+
+jest.mock('./connectors/magic', () => ({
+  magic: jest.fn().mockReturnValue({ id: 'magic' }),
 }))
 
 import { clearConnectionStorage, clearWagmiState, createWeb3CoreConfig } from './wagmi'
 import { createConfig, http } from 'wagmi'
 import { injected, walletConnect, coinbaseWallet } from 'wagmi/connectors'
+import { magic } from './connectors/magic'
 
 const mockedCreateConfig = createConfig as jest.Mock
 const mockedHttp = http as jest.Mock
 const mockedInjected = injected as jest.Mock
 const mockedWalletConnect = walletConnect as jest.Mock
 const mockedCoinbaseWallet = coinbaseWallet as jest.Mock
+const mockedMagic = magic as jest.Mock
 
 describe('wagmi', () => {
   afterEach(() => {
@@ -45,8 +50,16 @@ describe('wagmi', () => {
         expect(mockedCoinbaseWallet).toHaveBeenCalledTimes(1)
       })
 
-      it('should not enable walletConnect without a project ID', () => {
-        expect(mockedWalletConnect).not.toHaveBeenCalled()
+      it('should enable walletConnect with the default project ID', () => {
+        expect(mockedWalletConnect).toHaveBeenCalledTimes(1)
+        expect(mockedWalletConnect).toHaveBeenCalledWith(
+          expect.objectContaining({ projectId: '61570c542c2d66c659492e5b24a41522' })
+        )
+      })
+
+      it('should enable the magic connector with the default prd key', () => {
+        expect(mockedMagic).toHaveBeenCalledTimes(1)
+        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: 'pk_live_212568025B158355' })
       })
     })
 
@@ -63,9 +76,102 @@ describe('wagmi', () => {
       })
 
       it('should pass the project ID to walletConnect', () => {
-        expect(mockedWalletConnect).toHaveBeenCalledWith(
-          expect.objectContaining({ projectId })
+        expect(mockedWalletConnect).toHaveBeenCalledWith(expect.objectContaining({ projectId }))
+      })
+    })
+
+    describe('when environment is prd', () => {
+      beforeEach(() => {
+        createWeb3CoreConfig({ environment: 'prd' })
+      })
+
+      it('should use the production magic key', () => {
+        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: 'pk_live_212568025B158355' })
+      })
+    })
+
+    describe('when a custom magic apiKey is provided via connectors', () => {
+      beforeEach(() => {
+        createWeb3CoreConfig({ connectors: { magic: { apiKey: 'pk_live_CUSTOM_KEY' } } })
+      })
+
+      it('should use the custom magic key', () => {
+        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: 'pk_live_CUSTOM_KEY' })
+      })
+    })
+
+    describe('when environment is stg', () => {
+      beforeEach(() => {
+        createWeb3CoreConfig({ environment: 'stg' })
+      })
+
+      it('should use the production magic key', () => {
+        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: 'pk_live_212568025B158355' })
+      })
+    })
+
+    describe('when environment is dev', () => {
+      beforeEach(() => {
+        createWeb3CoreConfig({ environment: 'dev' })
+      })
+
+      it('should use the dev magic key', () => {
+        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: 'pk_live_CE856A4938B36648' })
+      })
+    })
+
+    describe('when an invalid environment is provided', () => {
+      it('should throw an error', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expect(() => createWeb3CoreConfig({ environment: 'production' as any })).toThrow(
+          'Invalid environment "production"'
         )
+      })
+    })
+
+    describe('when magic is explicitly set to true', () => {
+      beforeEach(() => {
+        createWeb3CoreConfig({ connectors: { magic: true } })
+      })
+
+      it('should enable the magic connector with the default key', () => {
+        expect(mockedMagic).toHaveBeenCalledTimes(1)
+        expect(mockedMagic).toHaveBeenCalledWith({ apiKey: 'pk_live_212568025B158355' })
+      })
+    })
+
+    describe('when magic is passed via additionalConnectors while built-in magic is enabled', () => {
+      let additionalMagic: jest.Mock
+
+      beforeEach(() => {
+        additionalMagic = jest.fn()
+        createWeb3CoreConfig({ additionalConnectors: [additionalMagic] })
+      })
+
+      it('should include both the built-in and additional connectors', () => {
+        const call = mockedCreateConfig.mock.calls[0][0]
+        expect(mockedMagic).toHaveBeenCalledTimes(1)
+        expect(call.connectors).toContain(additionalMagic)
+      })
+    })
+
+    describe('when magic connector is disabled via connectors option', () => {
+      beforeEach(() => {
+        createWeb3CoreConfig({ connectors: { magic: false } })
+      })
+
+      it('should not enable the magic connector', () => {
+        expect(mockedMagic).not.toHaveBeenCalled()
+      })
+    })
+
+    describe('when walletConnect is disabled via connectors option', () => {
+      beforeEach(() => {
+        createWeb3CoreConfig({ connectors: { walletConnect: false } })
+      })
+
+      it('should not enable the walletConnect connector', () => {
+        expect(mockedWalletConnect).not.toHaveBeenCalled()
       })
     })
 
@@ -74,8 +180,8 @@ describe('wagmi', () => {
         createWeb3CoreConfig({
           connectors: {
             injected: false,
-            coinbaseWallet: false
-          }
+            coinbaseWallet: false,
+          },
         })
       })
 
@@ -103,7 +209,14 @@ describe('wagmi', () => {
     })
 
     describe('when custom chains are provided', () => {
-      let customChains: readonly [{ id: number; name: string; nativeCurrency: { name: string; symbol: string; decimals: number }; rpcUrls: { default: { http: string[] } } }]
+      let customChains: readonly [
+        {
+          id: number
+          name: string
+          nativeCurrency: { name: string; symbol: string; decimals: number }
+          rpcUrls: { default: { http: string[] } }
+        },
+      ]
 
       beforeEach(() => {
         customChains = [
@@ -111,8 +224,8 @@ describe('wagmi', () => {
             id: 1,
             name: 'Ethereum',
             nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-            rpcUrls: { default: { http: ['https://eth.example.com'] } }
-          }
+            rpcUrls: { default: { http: ['https://eth.example.com'] } },
+          },
         ] as const
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         createWeb3CoreConfig({ chains: customChains as any })
@@ -130,7 +243,7 @@ describe('wagmi', () => {
       beforeEach(() => {
         customTransport = 'custom-transport'
         createWeb3CoreConfig({
-          transports: { [ChainId.ETHEREUM_MAINNET]: customTransport as never }
+          transports: { [ChainId.ETHEREUM_MAINNET]: customTransport as never },
         })
       })
 
@@ -147,15 +260,15 @@ describe('wagmi', () => {
             walletConnectProjectId: 'test-id',
             appMetadata: {
               name: 'My App',
-              url: 'https://myapp.com'
-            }
+              url: 'https://myapp.com',
+            },
           })
         })
 
         it('should pass the custom app name to walletConnect', () => {
           expect(mockedWalletConnect).toHaveBeenCalledWith(
             expect.objectContaining({
-              metadata: expect.objectContaining({ name: 'My App' })
+              metadata: expect.objectContaining({ name: 'My App' }),
             })
           )
         })
@@ -163,7 +276,7 @@ describe('wagmi', () => {
         it('should pass the custom url to walletConnect', () => {
           expect(mockedWalletConnect).toHaveBeenCalledWith(
             expect.objectContaining({
-              metadata: expect.objectContaining({ url: 'https://myapp.com' })
+              metadata: expect.objectContaining({ url: 'https://myapp.com' }),
             })
           )
         })
@@ -174,15 +287,15 @@ describe('wagmi', () => {
           createWeb3CoreConfig({
             walletConnectProjectId: 'test-id',
             appMetadata: {
-              urlPath: '/marketplace'
-            }
+              urlPath: '/marketplace',
+            },
           })
         })
 
         it('should build the url from the default base and the path', () => {
           expect(mockedWalletConnect).toHaveBeenCalledWith(
             expect.objectContaining({
-              metadata: expect.objectContaining({ url: 'https://decentraland.org/marketplace' })
+              metadata: expect.objectContaining({ url: 'https://decentraland.org/marketplace' }),
             })
           )
         })
@@ -193,15 +306,15 @@ describe('wagmi', () => {
           createWeb3CoreConfig({
             walletConnectProjectId: 'test-id',
             appMetadata: {
-              urlPath: '  '
-            }
+              urlPath: '  ',
+            },
           })
         })
 
         it('should use the default base url', () => {
           expect(mockedWalletConnect).toHaveBeenCalledWith(
             expect.objectContaining({
-              metadata: expect.objectContaining({ url: 'https://decentraland.org' })
+              metadata: expect.objectContaining({ url: 'https://decentraland.org' }),
             })
           )
         })
@@ -212,15 +325,15 @@ describe('wagmi', () => {
           createWeb3CoreConfig({
             walletConnectProjectId: 'test-id',
             appMetadata: {
-              urlPath: 'marketplace'
-            }
+              urlPath: 'marketplace',
+            },
           })
         })
 
         it('should add the leading slash automatically', () => {
           expect(mockedWalletConnect).toHaveBeenCalledWith(
             expect.objectContaining({
-              metadata: expect.objectContaining({ url: 'https://decentraland.org/marketplace' })
+              metadata: expect.objectContaining({ url: 'https://decentraland.org/marketplace' }),
             })
           )
         })
@@ -230,14 +343,14 @@ describe('wagmi', () => {
     describe('when appMetadata is not provided', () => {
       beforeEach(() => {
         createWeb3CoreConfig({
-          walletConnectProjectId: 'test-id'
+          walletConnectProjectId: 'test-id',
         })
       })
 
       it('should use default app metadata', () => {
         expect(mockedWalletConnect).toHaveBeenCalledWith(
           expect.objectContaining({
-            metadata: expect.objectContaining({ name: 'Decentraland' })
+            metadata: expect.objectContaining({ name: 'Decentraland' }),
           })
         )
       })
@@ -246,7 +359,7 @@ describe('wagmi', () => {
     describe('when coinbaseWallet is enabled', () => {
       beforeEach(() => {
         createWeb3CoreConfig({
-          appMetadata: { name: 'Test App' }
+          appMetadata: { name: 'Test App' },
         })
       })
 
@@ -267,7 +380,7 @@ describe('wagmi', () => {
         const store: Record<string, string> = {
           'wagmi.connected': 'true',
           'wagmi.wallet': 'metamask',
-          'other.key': 'value'
+          'other.key': 'value',
         }
         const keys = Object.keys(store)
 
@@ -278,10 +391,10 @@ describe('wagmi', () => {
             getItem: (k: string) => store[k] ?? null,
             setItem: jest.fn(),
             removeItem: jest.fn(),
-            clear: jest.fn()
+            clear: jest.fn(),
           },
           writable: true,
-          configurable: true
+          configurable: true,
         })
 
         clearWagmiState()
@@ -291,7 +404,7 @@ describe('wagmi', () => {
         Object.defineProperty(window, 'localStorage', {
           value: originalLocalStorage,
           writable: true,
-          configurable: true
+          configurable: true,
         })
       })
 
@@ -334,10 +447,10 @@ describe('wagmi', () => {
         Object.defineProperty(window, 'localStorage', {
           value: {
             ...originalLocalStorage,
-            removeItem: jest.fn()
+            removeItem: jest.fn(),
           },
           writable: true,
-          configurable: true
+          configurable: true,
         })
 
         clearConnectionStorage()
@@ -347,12 +460,14 @@ describe('wagmi', () => {
         Object.defineProperty(window, 'localStorage', {
           value: originalLocalStorage,
           writable: true,
-          configurable: true
+          configurable: true,
         })
       })
 
       it('should remove the decentraland-connect storage key', () => {
-        expect(window.localStorage.removeItem).toHaveBeenCalledWith('decentraland-connect-storage-key')
+        expect(window.localStorage.removeItem).toHaveBeenCalledWith(
+          'decentraland-connect-storage-key'
+        )
       })
     })
 

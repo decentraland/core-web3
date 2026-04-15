@@ -4,6 +4,7 @@ import type { CreateConnectorFn } from 'wagmi'
 import { coinbaseWallet, injected, walletConnect } from 'wagmi/connectors'
 import { ChainId } from '@dcl/schemas'
 import { supportedChains } from './chains'
+import { magic } from './connectors/magic'
 
 /**
  * Configuration options for creating a Web3 Core config.
@@ -35,10 +36,16 @@ type AppMetadataInput = {
 interface Web3CoreConfigOptions {
   /**
    * WalletConnect Cloud project ID.
-   * Required to enable WalletConnect connector.
-   * Get one at https://cloud.walletconnect.com
+   * @default Decentraland shared project ID
    */
   walletConnectProjectId?: string
+
+  /**
+   * Decentraland environment used to select the default Magic API key.
+   * Only used when `connectors.magic` does not provide an explicit `apiKey`.
+   * @default 'prd'
+   */
+  environment?: 'dev' | 'stg' | 'prd'
 
   /**
    * Application metadata used by wallet connectors.
@@ -66,26 +73,20 @@ interface Web3CoreConfigOptions {
   connectors?: {
     /** Enable injected wallet connector (MetaMask, etc.) @default true */
     injected?: boolean
-    /** Enable WalletConnect connector (requires walletConnectProjectId) @default true */
+    /** Enable WalletConnect connector @default true */
     walletConnect?: boolean
     /** Enable Coinbase Wallet connector @default true */
     coinbaseWallet?: boolean
+    /** Enable Magic connector for social login. Pass `{ apiKey }` to override the default key. @default true */
+    magic?: boolean | { apiKey: string }
   }
 
   /**
    * Additional custom connectors to include.
-   * Use this to add connectors like Magic for social login.
+   * Use this to add connectors beyond the built-in ones.
    *
-   * @example
-   * ```ts
-   * import { magic } from '@dcl/core-web3'
-   *
-   * const config = createWeb3CoreConfig({
-   *   additionalConnectors: [
-   *     magic({ apiKey: '...', rpcUrl: '...', chainId: 1 }),
-   *   ],
-   * })
-   * ```
+   * **Note:** Magic is now built-in (controlled via `connectors.magic`).
+   * If you were passing `magic()` here, remove it to avoid double-registration.
    */
   additionalConnectors?: CreateConnectorFn[]
 }
@@ -99,6 +100,18 @@ const defaultAppMetadata: AppMetadata = {
   description: 'Decentraland dApp',
   url: 'https://decentraland.org',
   icons: ['https://cdn.decentraland.org/@dcl/marketplace-site/6.41.1/favicon.ico']
+}
+
+// Publishable client-side keys — not secrets
+const DEFAULT_WALLET_CONNECT_PROJECT_ID = '61570c542c2d66c659492e5b24a41522'
+
+// dev uses the test Magic application; stg and prd share the production one
+const NON_PRD_MAGIC_KEY = 'pk_live_CE856A4938B36648'
+const PRD_MAGIC_KEY = 'pk_live_212568025B158355'
+const DEFAULT_MAGIC_API_KEYS: Record<NonNullable<Web3CoreConfigOptions['environment']>, string> = {
+  dev: NON_PRD_MAGIC_KEY,
+  stg: PRD_MAGIC_KEY,
+  prd: PRD_MAGIC_KEY,
 }
 
 const DEFAULT_RPC_URLS: Record<number, string> = {
@@ -148,10 +161,11 @@ function resolveAppMetadata(overrides?: AppMetadataInput): AppMetadata {
 /**
  * Creates a wagmi config instance pre-configured for Decentraland dApps.
  *
- * Supports the following wallet connectors:
+ * Supports the following wallet connectors (all enabled by default):
  * - **Injected**: MetaMask, Brave Wallet, and other browser extension wallets
- * - **WalletConnect**: Mobile wallets via QR code (requires project ID)
+ * - **WalletConnect**: Mobile wallets via QR code
  * - **Coinbase Wallet**: Coinbase Wallet app and extension
+ * - **Magic**: Social login (email, Google, Discord)
  *
  * @param options - Configuration options for the Web3 Core config.
  * @returns A wagmi config instance ready to use with wagmi hooks.
@@ -160,33 +174,31 @@ function resolveAppMetadata(overrides?: AppMetadataInput): AppMetadata {
  * ```ts
  * import { createWeb3CoreConfig } from '@dcl/core-web3'
  *
- * // Basic usage with defaults
+ * // Zero-config — all connectors enabled with Decentraland defaults
  * const config = createWeb3CoreConfig()
  *
- * // With WalletConnect enabled
+ * // With custom app metadata
  * const config = createWeb3CoreConfig({
- *   walletConnectProjectId: 'your-project-id',
  *   appMetadata: {
  *     name: 'My Decentraland App',
- *     description: 'An awesome dApp',
- *     url: 'https://myapp.com',
+ *     urlPath: '/marketplace',
  *   },
  * })
  *
- * // With custom chains and disabled connectors
+ * // With disabled connectors and custom Magic key
  * const config = createWeb3CoreConfig({
- *   chains: [mainnet, polygon],
  *   connectors: {
- *     injected: true,
  *     walletConnect: false,
  *     coinbaseWallet: false,
+ *     magic: { apiKey: 'pk_live_CUSTOM' },
  *   },
  * })
  * ```
  */
 function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
   const {
-    walletConnectProjectId,
+    walletConnectProjectId = DEFAULT_WALLET_CONNECT_PROJECT_ID,
+    environment = 'prd',
     appMetadata: appMetadataOverrides,
     chains = supportedChains,
     transports: customTransports,
@@ -194,12 +206,17 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
     additionalConnectors = []
   } = options
 
+  if (!Object.prototype.hasOwnProperty.call(DEFAULT_MAGIC_API_KEYS, environment)) {
+    throw new Error(`Invalid environment "${environment}". Expected one of: ${Object.keys(DEFAULT_MAGIC_API_KEYS).join(', ')}`)
+  }
+
   const appMetadata = resolveAppMetadata(appMetadataOverrides)
 
   const {
     injected: enableInjected = true,
     walletConnect: enableWalletConnect = true,
-    coinbaseWallet: enableCoinbaseWallet = true
+    coinbaseWallet: enableCoinbaseWallet = true,
+    magic: magicOption = true
   } = connectorOptions
 
   const transports = chains.reduce(
@@ -216,14 +233,14 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
     connectors.push(injected())
   }
 
-  if (enableWalletConnect && walletConnectProjectId) {
+  if (enableWalletConnect) {
     connectors.push(
       walletConnect({
         projectId: walletConnectProjectId,
         metadata: {
           name: appMetadata.name,
           description: appMetadata.description ?? '',
-          url: appMetadata.url ?? '',
+          url: appMetadata.url,
           icons: appMetadata.icons ?? []
         }
       })
@@ -236,6 +253,11 @@ function createWeb3CoreConfig(options: Web3CoreConfigOptions = {}) {
         appName: appMetadata.name
       })
     )
+  }
+
+  if (magicOption !== false) {
+    const resolvedMagicKey = typeof magicOption === 'object' ? magicOption.apiKey : DEFAULT_MAGIC_API_KEYS[environment]
+    connectors.push(magic({ apiKey: resolvedMagicKey }))
   }
 
   connectors.push(...additionalConnectors)
