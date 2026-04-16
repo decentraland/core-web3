@@ -15,7 +15,8 @@
       "import": "./dist/esm/lazy/index.js",
       "require": "./dist/cjs/lazy/index.js",
       "types": "./dist/esm/lazy/index.d.ts"
-    }
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist"
