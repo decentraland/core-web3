@@ -16,6 +16,7 @@
       "require": "./dist/cjs/lazy/index.js",
       "types": "./dist/esm/lazy/index.d.ts"
     },
+    "./lazy/package.json": "./package.json",
     "./package.json": "./package.json"
   },
   "files": [
