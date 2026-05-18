@@ -97,7 +97,7 @@
     "thirdweb": "5.90.0",
     "typescript": "5.8.3",
     "viem": "2.21.0",
-    "wagmi": "2.14.0"
+    "wagmi": "2.19.5"
   },
   "repository": {
     "type": "git",
