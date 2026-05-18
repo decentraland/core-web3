@@ -94,7 +94,7 @@
     "react": "18.3.0",
     "react-dom": "18.3.0",
     "react-redux": "9.2.0",
-    "thirdweb": "5.90.0",
+    "thirdweb": "5.120.0",
     "typescript": "5.8.3",
     "viem": "2.21.0",
     "wagmi": "2.14.0"
